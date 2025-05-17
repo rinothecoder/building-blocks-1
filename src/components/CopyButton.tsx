@@ -12,33 +12,36 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
   const [loading, setLoading] = useState(false);
 
   const validateElementorTemplate = (template: any) => {
-    // Check for required root properties
-    if (!template.content || typeof template.content !== 'object') {
-      throw new Error('Invalid template: missing or invalid content object');
+    // Check if the template is already in Elementor format
+    if (template.version && template.type === 'elementor' && template.content) {
+      return template;
     }
 
-    // Ensure elements array exists and is valid
-    if (!Array.isArray(template.content.elements)) {
-      throw new Error('Invalid template: content.elements must be an array');
-    }
-
-    // Validate each element in the template
-    const validateElement = (element: any) => {
-      if (!element.elType || !element.id || !element.settings) {
-        throw new Error('Invalid template: elements must have elType, id, and settings');
-      }
-
+    // If it's a raw element or array of elements, wrap it in Elementor template structure
+    const elements = Array.isArray(template) ? template : [template];
+    
+    // Ensure each element has required properties
+    elements.forEach((element: any) => {
+      if (!element.elType) element.elType = 'section';
+      if (!element.id) element.id = Math.random().toString(36).substr(2, 9);
+      if (!element.settings) element.settings = {};
+      
+      // If it's a widget, ensure it has widgetType
       if (element.elType === 'widget' && !element.widgetType) {
-        throw new Error('Invalid template: widgets must have widgetType');
+        element.widgetType = 'text-editor'; // Default widget type
       }
+    });
 
-      if (Array.isArray(element.elements)) {
-        element.elements.forEach(validateElement);
+    // Return properly formatted Elementor template
+    return {
+      version: "0.4",
+      title: title,
+      type: "elementor",
+      content: {
+        elements: elements,
+        page_settings: {}
       }
     };
-
-    template.content.elements.forEach(validateElement);
-    return true;
   };
 
   const handleCopy = async () => {
@@ -52,26 +55,13 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
       
       const templateData = await response.json();
       
-      // Ensure the template follows Elementor's format
-      const elementorTemplate = {
-        version: "0.4",
-        title: title,
-        type: "elementor",
-        content: {
-          elements: Array.isArray(templateData.content?.elements) 
-            ? templateData.content.elements 
-            : [templateData],
-          page_settings: templateData.content?.page_settings || {}
-        }
-      };
+      // Validate and format the template
+      const elementorTemplate = validateElementorTemplate(templateData);
 
-      // Validate the template structure
-      validateElementorTemplate(elementorTemplate);
-
-      // Remove any Skelementor-specific properties
+      // Remove any unnecessary properties
       const cleanTemplate = JSON.stringify(elementorTemplate, (key, value) => {
         // Skip these properties
-        if (['source', 'siteurl'].includes(key)) {
+        if (['source', 'siteurl', 'custom_css', 'custom_js'].includes(key)) {
           return undefined;
         }
         return value;

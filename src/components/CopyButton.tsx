@@ -20,8 +20,18 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
         throw new Error('Failed to fetch template content');
       }
       
+      // Check if the response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Invalid template format: Expected JSON content');
+      }
+
       const templateData = await response.json();
       
+      if (!templateData || typeof templateData !== 'object') {
+        throw new Error('Invalid template data structure');
+      }
+
       // Format the template for Elementor
       const elementorTemplate = {
         title: title,
@@ -32,7 +42,7 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
       };
 
       // Convert to string with proper formatting
-      const templateString = JSON.stringify(elementorTemplate);
+      const templateString = JSON.stringify(elementorTemplate, null, 2);
 
       await navigator.clipboard.writeText(templateString);
       
@@ -41,7 +51,7 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error('Error copying template:', error);
-      toast.error('Failed to copy template. Please try again.');
+      toast.error(error instanceof Error ? error.message : 'Failed to copy template. Please try again.');
     } finally {
       setLoading(false);
     }

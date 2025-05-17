@@ -38,6 +38,47 @@ export function transformTemplate(template: ElementorTemplate): TransformedTempl
   return transformed;
 }
 
+export async function sanitizeAndCopyTemplate(template: any): Promise<void> {
+  try {
+    // First convert to string if it's an object
+    const templateString = typeof template === 'string' 
+      ? template 
+      : JSON.stringify(template);
+
+    console.log('Original length:', templateString.length);
+
+    // Clean the string of any potential hidden characters
+    const cleanString = templateString
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+      .replace(/\u00A0/g, ' ')  // Replace non-breaking spaces
+      .replace(/\uFEFF/g, '')   // Remove byte order mark
+      .trim();                  // Remove leading/trailing whitespace
+
+    console.log('Cleaned length:', cleanString.length);
+
+    // Parse back to object to ensure valid JSON
+    const templateObj = JSON.parse(cleanString);
+
+    // Ensure required structure
+    const validTemplate = {
+      version: templateObj.version || "0.4",
+      title: templateObj.title || "Untitled Template",
+      type: "elementor",
+      elements: templateObj.elements || []
+    };
+
+    // Convert back to string for clipboard
+    const finalString = JSON.stringify(validTemplate);
+    console.log('Final length:', finalString.length);
+
+    await navigator.clipboard.writeText(finalString);
+  } catch (error) {
+    console.error('Template processing error:', error);
+    console.error('Template string:', template);
+    throw new Error('Failed to process template');
+  }
+}
+
 export async function copyTemplateToClipboard(templateUrl: string, title: string): Promise<void> {
   console.log('Starting template copy process', { templateUrl, title });
 
@@ -67,22 +108,14 @@ export async function copyTemplateToClipboard(templateUrl: string, title: string
     // Validate template structure
     const validatedTemplate = validateTemplate(templateData);
 
-    // Transform the template
+    // Transform and sanitize the template
     const transformed = transformTemplate({
       ...validatedTemplate,
       title: title || validatedTemplate.title
     });
 
-    // Stringify with proper escaping and no formatting
-    const templateString = JSON.stringify(transformed)
-      .replace(/\n/g, '')
-      .replace(/\r/g, '')
-      .replace(/\t/g, '')
-      .replace(/\s+/g, ' ');
-
-    console.log('Final template string:', templateString);
-
-    await navigator.clipboard.writeText(templateString);
+    // Use the new sanitization function
+    await sanitizeAndCopyTemplate(transformed);
     console.log('Template copied to clipboard successfully');
   } catch (error) {
     console.error('Template processing error:', error);

@@ -37,7 +37,7 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
           name,
           thumbnail_url,
           template_url,
-          template_tags!left (
+          template_tags!inner (
             tags (
               name
             )
@@ -46,9 +46,10 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
         .range(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE - 1)
         .order('created_at', { ascending: false });
 
-      // Only filter by tags if tags are selected
+      // Filter by selected tags
       if (selectedTags.length > 0) {
-        query = query.in('template_tags.tags.name', selectedTags);
+        const tagFilter = selectedTags.map(tag => `template_tags.tags.name.eq.${tag}`).join(',');
+        query = query.or(tagFilter);
       }
 
       const { data, error } = await query;
@@ -64,9 +65,9 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
         imageUrl: template.thumbnail_url,
         templateUrl: template.template_url,
         tags: template.template_tags
-          ?.filter(tt => tt?.tags) // Filter out null/undefined tags
+          ?.filter(tt => tt?.tags)
           ?.map((tt: any) => tt.tags?.name)
-          ?.filter(Boolean) || [] // Filter out null/undefined names
+          ?.filter(Boolean) || []
       }));
 
       if (page === 0) {

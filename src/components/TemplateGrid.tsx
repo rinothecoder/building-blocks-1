@@ -121,7 +121,16 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
         <>
           <div className={`grid ${gridColsClass} gap-6`}>
             {templates.map((template) => (
-              <TemplateCard key={template.id} template={template} />
+              <TemplateCard 
+                key={template.id} 
+                template={template} 
+                onTagClick={(tag) => {
+                  if (!selectedTags.includes(tag)) {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                selectedTags={selectedTags}
+              />
             ))}
           </div>
           

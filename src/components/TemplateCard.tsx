@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import { Template } from '../types';
 import CopyButton from './CopyButton';
 import PreviewPopup from './PreviewPopup';
-import { Eye } from 'lucide-react';
+import { Eye, Edit } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface TemplateCardProps {
   template: Template;
+  onTagClick?: (tag: string) => void;
+  selectedTags?: string[];
 }
 
-const TemplateCard: React.FC<TemplateCardProps> = ({ template }) => {
+const TemplateCard: React.FC<TemplateCardProps> = ({ template, onTagClick, selectedTags = [] }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
@@ -37,6 +40,13 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template }) => {
                 <Eye className="h-4 w-4 mr-1" />
                 <span>Preview</span>
               </button>
+              <Link 
+                to={`/admin/templates/${template.id}`}
+                className="flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium bg-white/20 text-white backdrop-blur-sm hover:bg-white/30 transition-all duration-200"
+              >
+                <Edit className="h-4 w-4 mr-1" />
+                <span>Edit</span>
+              </Link>
             </div>
           </div>
         </div>
@@ -45,12 +55,17 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template }) => {
           <h3 className="text-base font-medium text-gray-800 mb-2 truncate">{template.title}</h3>
           <div className="flex flex-wrap gap-2">
             {template.tags.map((tag) => (
-              <span 
-                key={tag} 
-                className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-50 text-blue-600 capitalize"
+              <button 
+                key={tag}
+                onClick={() => onTagClick?.(tag)}
+                className={`px-2 py-0.5 text-xs font-medium rounded-full transition-colors ${
+                  selectedTags.includes(tag)
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                } capitalize cursor-pointer`}
               >
                 {tag}
-              </span>
+              </button>
             ))}
           </div>
         </div>

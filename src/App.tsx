@@ -8,6 +8,7 @@ import SignUpPage from './pages/SignUpPage';
 import DebugLogPage from './pages/DebugLogPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import UpdatePasswordPage from './pages/UpdatePasswordPage';
+import TemplateEditPage from './pages/TemplateEditPage';
 import { LayoutProvider } from './context/LayoutContext';
 import { AuthProvider, RequireAuth } from './context/AuthContext';
 
@@ -29,6 +30,14 @@ function App() {
               element={
                 <RequireAuth>
                   <AdminPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/templates/:id"
+              element={
+                <RequireAuth>
+                  <TemplateEditPage />
                 </RequireAuth>
               }
             />

@@ -13,16 +13,15 @@ export default function UpdatePasswordPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    checkSession();
-  }, []);
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token');
+    const type = hashParams.get('type');
 
-  const checkSession = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    if (!accessToken || type !== 'recovery') {
       toast.error('Invalid or expired reset link');
       navigate('/login');
     }
-  };
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -11,17 +11,10 @@ function validateTemplate(template: any): ElementorTemplate {
     throw new Error('Template must be an object');
   }
 
-  // Check for required structure
-  if (!template.content?.elements && !template.elements) {
+  // Check for required fields
+  if (!template.version || !template.type || (!template.content && !template.elements)) {
     console.error('Invalid template structure:', template);
-    throw new Error('Template must have either content.elements or elements array');
-  }
-
-  // Validate elements structure
-  const elements = template.content?.elements || template.elements;
-  if (!Array.isArray(elements)) {
-    console.error('Invalid elements structure:', elements);
-    throw new Error('Template elements must be an array');
+    throw new Error('Template missing required fields (version, type, content/elements)');
   }
 
   return template as ElementorTemplate;
@@ -30,20 +23,15 @@ function validateTemplate(template: any): ElementorTemplate {
 export function transformTemplate(template: ElementorTemplate): TransformedTemplate {
   console.log('Starting template transformation');
 
-  // Extract elements from either content or direct elements property
-  const elements = template.content?.elements || template.elements || [];
+  // Extract elements from content or direct elements property
+  const elements = template.content || [];
   console.log('Extracted elements:', elements);
 
   const transformed: TransformedTemplate = {
-    version: "0.4",
+    version: template.version,
     title: template.title || "Untitled Template",
-    type: "elementor",
-    elements: elements.map(element => ({
-      ...element,
-      elType: element.elType || "section",
-      settings: element.settings || {},
-      elements: element.elements || []
-    }))
+    type: "elementor", // Always set to "elementor" for paste functionality
+    elements: elements
   };
 
   console.log('Transformed template:', transformed);

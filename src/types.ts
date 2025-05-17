@@ -7,25 +7,18 @@ export interface Template {
 }
 
 export interface ElementorTemplate {
+  version: string;
   title?: string;
-  content?: {
-    elements: TemplateElement[];
-  };
-  elements?: TemplateElement[];
-}
-
-export interface TemplateElement {
-  id: string;
-  elType?: string;
-  settings?: Record<string, unknown>;
-  elements?: TemplateElement[];
+  type: string;
+  content?: any[];
+  elements?: any[];
 }
 
 export interface TransformedTemplate {
   version: string;
   title: string;
   type: string;
-  elements: TemplateElement[];
+  elements: any[];
 }
 
 export interface FilterState {

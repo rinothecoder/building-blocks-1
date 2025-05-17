@@ -98,15 +98,23 @@ export async function copyTemplateToClipboard(templateUrl: string, title: string
     }
 
     // Get response text and try to parse
-    const text = await response.text();
-    console.log('Raw template text:', text);
+    let text = await response.text();
+    console.log('Raw template text length:', text.length);
+    
+    // Clean the text by removing any content after the last valid JSON character
+    text = text.replace(/}\s*[^{}\[\]\s][\s\S]*$/, '}')
+               .replace(/]\s*[^{}\[\]\s][\s\S]*$/, ']')
+               .trim();
+    
+    console.log('Cleaned template text length:', text.length);
 
     let templateData;
     try {
-      templateData = JSON.parse(text.trim());
+      templateData = JSON.parse(text);
       console.log('Parsed template data:', templateData);
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
+      console.error('Failed text content:', text);
       throw new Error('Invalid JSON format in template file');
     }
 

@@ -27,18 +27,14 @@ export function transformTemplate(template: ElementorTemplate): TransformedTempl
   const elements = template.content?.elements || template.elements || [];
   console.log('Extracted elements:', elements);
 
-  // Ensure we're using the latest Elementor version
+  // Create the transformed template with the exact structure Elementor expects
   const transformed: TransformedTemplate = {
     version: "0.4",
     title: template.title || "Untitled Template",
     type: "elementor",
     siteurl: window.location.origin + "/wp-json/",
     thumbnail: "",
-    elements: elements,
-    content: {
-      elements: elements,
-      page_settings: template.content?.page_settings || {}
-    }
+    elements: elements
   };
 
   console.log('Transformed template:', transformed);
@@ -50,31 +46,29 @@ export async function sanitizeAndCopyTemplate(template: any): Promise<void> {
     // First convert to string if it's an object
     const templateString = typeof template === 'string' 
       ? template 
-      : JSON.stringify(template, null, 2); // Pretty print for better debugging
+      : JSON.stringify(template, null, 2);
 
     console.log('Original length:', templateString.length);
 
     // Clean the string of any potential hidden characters
     const cleanString = templateString
-      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
-      .replace(/\u00A0/g, ' ')  // Replace non-breaking spaces
-      .replace(/\uFEFF/g, '')   // Remove byte order mark
-      .trim();                  // Remove leading/trailing whitespace
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+      .replace(/\u00A0/g, ' ')
+      .replace(/\uFEFF/g, '')
+      .trim();
 
     console.log('Cleaned length:', cleanString.length);
 
     // Parse back to object to ensure valid JSON
     const templateObj = JSON.parse(cleanString);
 
-    // Ensure the template has all required properties
+    // Create the final template with the exact structure Elementor expects
     const finalTemplate = {
-      ...templateObj,
-      version: "0.4", // Force latest version
+      version: "0.4",
       type: "elementor",
-      content: {
-        elements: templateObj.content?.elements || templateObj.elements || [],
-        page_settings: templateObj.content?.page_settings || {}
-      }
+      title: templateObj.title || "Untitled Template",
+      siteurl: window.location.origin + "/wp-json/",
+      elements: templateObj.elements || []
     };
 
     // Convert back to string for clipboard

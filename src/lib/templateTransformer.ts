@@ -27,13 +27,18 @@ export function transformTemplate(template: ElementorTemplate): TransformedTempl
   const elements = template.content?.elements || template.elements || [];
   console.log('Extracted elements:', elements);
 
+  // Ensure we're using the latest Elementor version
   const transformed: TransformedTemplate = {
-    version: template.version,
+    version: "0.4",
     title: template.title || "Untitled Template",
     type: "elementor",
     siteurl: window.location.origin + "/wp-json/",
     thumbnail: "",
-    elements: elements
+    elements: elements,
+    content: {
+      elements: elements,
+      page_settings: template.content?.page_settings || {}
+    }
   };
 
   console.log('Transformed template:', transformed);
@@ -45,7 +50,7 @@ export async function sanitizeAndCopyTemplate(template: any): Promise<void> {
     // First convert to string if it's an object
     const templateString = typeof template === 'string' 
       ? template 
-      : JSON.stringify(template);
+      : JSON.stringify(template, null, 2); // Pretty print for better debugging
 
     console.log('Original length:', templateString.length);
 
@@ -61,8 +66,20 @@ export async function sanitizeAndCopyTemplate(template: any): Promise<void> {
     // Parse back to object to ensure valid JSON
     const templateObj = JSON.parse(cleanString);
 
+    // Ensure the template has all required properties
+    const finalTemplate = {
+      ...templateObj,
+      version: "0.4", // Force latest version
+      type: "elementor",
+      content: {
+        elements: templateObj.content?.elements || templateObj.elements || [],
+        page_settings: templateObj.content?.page_settings || {}
+      }
+    };
+
     // Convert back to string for clipboard
-    const finalString = JSON.stringify(templateObj);
+    const finalString = JSON.stringify(finalTemplate);
+    console.log('Final template structure:', finalTemplate);
     console.log('Final length:', finalString.length);
 
     await navigator.clipboard.writeText(finalString);

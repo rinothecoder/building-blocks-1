@@ -19,14 +19,14 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
         throw new Error('Failed to fetch template content');
       }
       
-      const content = await response.json();
+      const data = await response.json();
       
-      // Create the Elementor template structure
+      // Ensure we're using the content array directly
       const elementorTemplate = {
         version: "0.4",
         title: title || "Template from Bolt",
         type: "page",
-        content: content // Direct assignment of content array
+        content: Array.isArray(data.content) ? data.content : data // Use the array directly if it exists, otherwise use the whole response
       };
 
       await navigator.clipboard.writeText(JSON.stringify(elementorTemplate));

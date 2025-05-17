@@ -21,12 +21,16 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
       
       const data = await response.json();
       
-      // Format the template according to Elementor's structure
+      // Transform the template data to match Elementor's format
       const elementorTemplate = {
         version: "0.4",
         title: title,
         type: "elementor",
-        content: data.elements || [data],
+        content: {
+          type: "elementor",
+          siteurl: "https://library.skelementor.com/wp-json/",
+          elements: data.content || [data]
+        },
         page_settings: {
           hide_title: "yes",
           template: "elementor_canvas"

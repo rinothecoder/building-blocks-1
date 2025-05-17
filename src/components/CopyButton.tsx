@@ -19,14 +19,18 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
       if (!response.ok) {
         throw new Error('Failed to fetch template content');
       }
-      
-      // Check if the response is JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Invalid template format: Expected JSON content');
-      }
 
-      const templateData = await response.json();
+      let templateData;
+      const contentType = response.headers.get('content-type');
+      const responseText = await response.text(); // Get response as text first
+
+      try {
+        // Try to parse the response text as JSON
+        templateData = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse template content:', responseText);
+        throw new Error('Invalid template format: Unable to parse JSON content');
+      }
       
       if (!templateData || typeof templateData !== 'object') {
         throw new Error('Invalid template data structure');

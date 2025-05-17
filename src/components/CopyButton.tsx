@@ -11,28 +11,6 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const validateElementorTemplate = (template: any) => {
-    // If it's already a valid Elementor template, return as is
-    if (template.content) {
-      return {
-        title: template.title,
-        type: "elementor",
-        siteurl: window.location.origin + '/wp-json/',
-        elements: template.content,
-        thumbnail: template.thumbnail_url
-      };
-    }
-
-    // Return properly formatted Elementor template
-    return {
-      title: title,
-      type: "elementor",
-      siteurl: window.location.origin + '/wp-json/',
-      elements: template.elements || [],
-      thumbnail: template.thumbnail_url
-    };
-  };
-
   const handleCopy = async () => {
     try {
       setLoading(true);
@@ -44,8 +22,14 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
       
       const templateData = await response.json();
       
-      // Validate and format the template
-      const elementorTemplate = validateElementorTemplate(templateData);
+      // Format the template for Elementor
+      const elementorTemplate = {
+        title: title,
+        type: "elementor",
+        siteurl: window.location.origin + '/wp-json/',
+        elements: templateData.content || templateData.elements || [],
+        thumbnail: templateData.thumbnail_url || templateData.thumbnail
+      };
 
       // Convert to string with proper formatting
       const templateString = JSON.stringify(elementorTemplate);

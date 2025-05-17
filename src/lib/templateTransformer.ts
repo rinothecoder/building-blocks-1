@@ -19,24 +19,37 @@ export function transformTemplate(template: ElementorTemplate): TransformedTempl
 
 export async function copyTemplateToClipboard(templateUrl: string, title: string): Promise<void> {
   try {
+    // Fetch template data
     const response = await fetch(templateUrl);
     if (!response.ok) {
-      throw new Error('Failed to fetch template');
+      throw new Error(`Failed to fetch template: ${response.statusText}`);
     }
 
-    const templateData = await response.json();
+    let templateData;
+    try {
+      const text = await response.text();
+      templateData = JSON.parse(text.trim());
+    } catch (parseError) {
+      throw new Error('Invalid JSON format in template file');
+    }
+
     if (!templateData || typeof templateData !== 'object') {
       throw new Error('Invalid template data structure');
     }
 
+    // Transform the template
     const transformed = transformTemplate({
       ...templateData,
-      title
+      title: title || templateData.title
     });
 
-    // Convert to single-line JSON string with no extra whitespace
-    const templateString = JSON.stringify(transformed);
-    
+    // Stringify with proper escaping and no formatting
+    const templateString = JSON.stringify(transformed)
+      .replace(/\n/g, '')
+      .replace(/\r/g, '')
+      .replace(/\t/g, '')
+      .replace(/\s+/g, ' ');
+
     await navigator.clipboard.writeText(templateString);
   } catch (error) {
     console.error('Template processing error:', error);

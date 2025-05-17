@@ -11,6 +11,36 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const validateElementorTemplate = (template: any) => {
+    // Check for required root properties
+    if (!template.content || typeof template.content !== 'object') {
+      throw new Error('Invalid template: missing or invalid content object');
+    }
+
+    // Ensure elements array exists and is valid
+    if (!Array.isArray(template.content.elements)) {
+      throw new Error('Invalid template: content.elements must be an array');
+    }
+
+    // Validate each element in the template
+    const validateElement = (element: any) => {
+      if (!element.elType || !element.id || !element.settings) {
+        throw new Error('Invalid template: elements must have elType, id, and settings');
+      }
+
+      if (element.elType === 'widget' && !element.widgetType) {
+        throw new Error('Invalid template: widgets must have widgetType');
+      }
+
+      if (Array.isArray(element.elements)) {
+        element.elements.forEach(validateElement);
+      }
+    };
+
+    template.content.elements.forEach(validateElement);
+    return true;
+  };
+
   const handleCopy = async () => {
     try {
       setLoading(true);
@@ -35,6 +65,9 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
         }
       };
 
+      // Validate the template structure
+      validateElementorTemplate(elementorTemplate);
+
       // Remove any Skelementor-specific properties
       const cleanTemplate = JSON.stringify(elementorTemplate, (key, value) => {
         // Skip these properties
@@ -47,11 +80,11 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
       await navigator.clipboard.writeText(cleanTemplate);
       
       setCopied(true);
-      toast.success('Template copied to clipboard');
+      toast.success('Template copied! You can now paste it into Elementor');
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error('Error copying template:', error);
-      toast.error('Failed to copy template');
+      toast.error(error instanceof Error ? error.message : 'Failed to copy template');
     } finally {
       setLoading(false);
     }

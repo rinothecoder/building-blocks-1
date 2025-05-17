@@ -12,9 +12,9 @@ function validateTemplate(template: any): ElementorTemplate {
   }
 
   // Check for required fields
-  if (!template.version || !template.type || (!template.content && !template.elements)) {
+  if (!template.version || !template.type) {
     console.error('Invalid template structure:', template);
-    throw new Error('Template missing required fields (version, type, content/elements)');
+    throw new Error('Template missing required fields (version, type)');
   }
 
   return template as ElementorTemplate;
@@ -24,14 +24,17 @@ export function transformTemplate(template: ElementorTemplate): TransformedTempl
   console.log('Starting template transformation');
 
   // Extract elements from content or direct elements property
-  const elements = template.content || [];
+  const elements = template.content?.elements || template.elements || [];
   console.log('Extracted elements:', elements);
 
   const transformed: TransformedTemplate = {
     version: template.version,
     title: template.title || "Untitled Template",
-    type: "elementor", // Always set to "elementor" for paste functionality
-    elements: elements
+    type: "elementor",
+    content: {
+      elements: elements,
+      page_settings: {}
+    }
   };
 
   console.log('Transformed template:', transformed);
@@ -59,12 +62,15 @@ export async function sanitizeAndCopyTemplate(template: any): Promise<void> {
     // Parse back to object to ensure valid JSON
     const templateObj = JSON.parse(cleanString);
 
-    // Ensure required structure
+    // Ensure required structure with content wrapper
     const validTemplate = {
       version: templateObj.version || "0.4",
       title: templateObj.title || "Untitled Template",
       type: "elementor",
-      elements: templateObj.elements || []
+      content: {
+        elements: templateObj.content?.elements || templateObj.elements || [],
+        page_settings: templateObj.content?.page_settings || {}
+      }
     };
 
     // Convert back to string for clipboard

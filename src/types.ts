@@ -10,7 +10,10 @@ export interface ElementorTemplate {
   version: string;
   title?: string;
   type: string;
-  content?: any[];
+  content?: {
+    elements: any[];
+    page_settings?: Record<string, any>;
+  };
   elements?: any[];
 }
 
@@ -18,7 +21,10 @@ export interface TransformedTemplate {
   version: string;
   title: string;
   type: string;
-  elements: any[];
+  content: {
+    elements: any[];
+    page_settings: Record<string, any>;
+  };
 }
 
 export interface FilterState {

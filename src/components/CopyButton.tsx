@@ -11,6 +11,18 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const extractJSON = (text: string): string => {
+    // Find the first '{' and last '}'
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    
+    if (start === -1 || end === -1 || end <= start) {
+      throw new Error('No valid JSON object found in response');
+    }
+    
+    return text.slice(start, end + 1);
+  };
+
   const handleCopy = async () => {
     try {
       setLoading(true);
@@ -20,29 +32,44 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
         throw new Error('Failed to fetch template content');
       }
 
-      let templateData;
-      const contentType = response.headers.get('content-type');
-      const responseText = await response.text(); // Get response as text first
-
+      const responseText = await response.text();
+      let jsonText: string;
+      
       try {
-        // Try to parse the response text as JSON
-        templateData = JSON.parse(responseText);
+        // First try to extract JSON from the response
+        jsonText = extractJSON(responseText);
+        
+        // Validate that it's parseable JSON
+        JSON.parse(jsonText);
       } catch (parseError) {
-        console.error('Failed to parse template content:', responseText);
-        throw new Error('Invalid template format: Unable to parse JSON content');
+        console.error('Response text:', responseText);
+        console.error('Parse error:', parseError);
+        throw new Error('Invalid template format: Unable to extract valid JSON content');
       }
+
+      const templateData = JSON.parse(jsonText);
       
       if (!templateData || typeof templateData !== 'object') {
         throw new Error('Invalid template data structure');
       }
 
+      // Ensure required properties exist and are of correct type
+      const elements = Array.isArray(templateData.content) ? templateData.content :
+                      Array.isArray(templateData.elements) ? templateData.elements : [];
+      
+      const thumbnail = typeof templateData.thumbnail_url === 'string' ? templateData.thumbnail_url :
+                       typeof templateData.thumbnail === 'string' ? templateData.thumbnail : '';
+
+      // Construct proper site URL with protocol
+      const siteUrl = new URL('/wp-json/', window.location.href).toString();
+
       // Format the template for Elementor
       const elementorTemplate = {
-        title: title,
+        title: String(title || ''),
         type: "elementor",
-        siteurl: window.location.origin + '/wp-json/',
-        elements: templateData.content || templateData.elements || [],
-        thumbnail: templateData.thumbnail_url || templateData.thumbnail
+        siteurl: siteUrl,
+        elements: elements,
+        thumbnail: thumbnail
       };
 
       // Convert to string with proper formatting

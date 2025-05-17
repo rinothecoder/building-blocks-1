@@ -12,35 +12,49 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
   const [loading, setLoading] = useState(false);
 
   const validateElementorTemplate = (template: any) => {
-    // Check if the template is already in Elementor format
-    if (template.version && template.type === 'elementor' && template.content) {
+    // If it's already a valid Elementor template, return as is
+    if (
+      template.version === "0.4" && 
+      template.type === "elementor" && 
+      Array.isArray(template.elements)
+    ) {
       return template;
     }
 
-    // If it's a raw element or array of elements, wrap it in Elementor template structure
-    const elements = Array.isArray(template) ? template : [template];
-    
+    // Extract elements from the template
+    const elements = template.content?.elements || template.elements || [];
+
     // Ensure each element has required properties
-    elements.forEach((element: any) => {
-      if (!element.elType) element.elType = 'section';
-      if (!element.id) element.id = Math.random().toString(36).substr(2, 9);
-      if (!element.settings) element.settings = {};
-      
-      // If it's a widget, ensure it has widgetType
-      if (element.elType === 'widget' && !element.widgetType) {
-        element.widgetType = 'text-editor'; // Default widget type
+    const processElement = (element: any): any => {
+      if (!element) return null;
+
+      // Ensure required properties exist
+      const processed = {
+        id: element.id || Math.random().toString(36).substr(2, 9),
+        elType: element.elType || 'section',
+        settings: element.settings || {},
+        elements: Array.isArray(element.elements) 
+          ? element.elements.map(processElement).filter(Boolean)
+          : []
+      };
+
+      // Add widgetType for widget elements
+      if (processed.elType === 'widget') {
+        processed.widgetType = element.widgetType || 'text-editor';
       }
-    });
+
+      return processed;
+    };
+
+    // Process all elements recursively
+    const processedElements = elements.map(processElement).filter(Boolean);
 
     // Return properly formatted Elementor template
     return {
       version: "0.4",
-      title: title,
+      title: title || "Imported Template",
       type: "elementor",
-      content: {
-        elements: elements,
-        page_settings: {}
-      }
+      elements: processedElements
     };
   };
 
@@ -58,23 +72,17 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
       // Validate and format the template
       const elementorTemplate = validateElementorTemplate(templateData);
 
-      // Remove any unnecessary properties
-      const cleanTemplate = JSON.stringify(elementorTemplate, (key, value) => {
-        // Skip these properties
-        if (['source', 'siteurl', 'custom_css', 'custom_js'].includes(key)) {
-          return undefined;
-        }
-        return value;
-      }, 2);
+      // Convert to string with proper formatting
+      const templateString = JSON.stringify(elementorTemplate, null, 2);
 
-      await navigator.clipboard.writeText(cleanTemplate);
+      await navigator.clipboard.writeText(templateString);
       
       setCopied(true);
       toast.success('Template copied! You can now paste it into Elementor');
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error('Error copying template:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to copy template');
+      toast.error('Failed to copy template. Please try again.');
     } finally {
       setLoading(false);
     }

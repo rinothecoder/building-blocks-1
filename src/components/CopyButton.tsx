@@ -19,7 +19,7 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
         throw new Error('Failed to fetch template content');
       }
       
-      const data = await response.json();
+      const templateData = await response.json();
       
       // Transform the template data to match Elementor's format
       const elementorTemplate = {
@@ -27,17 +27,25 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
         title: title,
         type: "elementor",
         content: {
-          type: "elementor",
-          siteurl: "https://library.skelementor.com/wp-json/",
-          elements: data.content || [data]
-        },
-        page_settings: {
-          hide_title: "yes",
-          template: "elementor_canvas"
+          elements: templateData.content?.elements || [
+            {
+              ...templateData,
+              elements: templateData.elements || []
+            }
+          ]
         }
       };
 
-      await navigator.clipboard.writeText(JSON.stringify(elementorTemplate));
+      // Clean up any Skelementor-specific properties
+      const cleanTemplate = JSON.stringify(elementorTemplate, (key, value) => {
+        // Remove Skelementor-specific properties
+        if (key === 'source' || key === 'siteurl') {
+          return undefined;
+        }
+        return value;
+      });
+
+      await navigator.clipboard.writeText(cleanTemplate);
       
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);

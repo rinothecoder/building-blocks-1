@@ -13,6 +13,8 @@ const CopyButton: React.FC<CopyButtonProps> = ({ templateUrl, title }) => {
   const [loading, setLoading] = useState(false);
 
   const handleCopy = async () => {
+    console.log('Copy button clicked', { templateUrl, title });
+    
     try {
       setLoading(true);
       await copyTemplateToClipboard(templateUrl, title);
@@ -20,7 +22,7 @@ const CopyButton: React.FC<CopyButtonProps> = ({ templateUrl, title }) => {
       toast.success('Template copied successfully!');
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Error copying template:', error);
+      console.error('Error in handleCopy:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to copy template');
     } finally {
       setLoading(false);

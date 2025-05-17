@@ -33,21 +33,23 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedTags, onTagSelect }) => {
       if (countError) throw countError;
       setTotalTemplates(templatesCount || 0);
 
-      // Get tags with their template counts
+      // Get tags with their template counts using a more accurate count
       const { data, error } = await supabase
         .from('tags')
         .select(`
           name,
-          template_tags (
-            count
+          template_tags!inner (
+            template_id
           )
         `);
 
       if (error) throw error;
 
+      // Process the data to count unique templates per tag
       const tagsWithCounts = data.map(tag => ({
         name: tag.name,
-        count: tag.template_tags.length
+        // Count unique template IDs for this tag
+        count: new Set(tag.template_tags.map((tt: any) => tt.template_id)).size
       })).sort((a, b) => b.count - a.count);
 
       setTags(tagsWithCounts);

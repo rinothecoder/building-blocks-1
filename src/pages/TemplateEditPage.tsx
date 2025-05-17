@@ -153,7 +153,7 @@ export default function TemplateEditPage() {
       }
 
       toast.success('Template updated successfully');
-      navigate('/admin');
+      navigate('/'); // Changed from '/admin' to '/'
     } catch (error) {
       console.error('Update error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to update template');
@@ -188,11 +188,11 @@ export default function TemplateEditPage() {
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <p className="text-red-700">{error}</p>
             <Link
-              to="/admin"
+              to="/"
               className="mt-4 inline-flex items-center text-red-700 hover:text-red-800"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Admin
+              Back to Templates
             </Link>
           </div>
         </div>
@@ -208,11 +208,11 @@ export default function TemplateEditPage() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <Link
-                to="/admin"
+                to="/"
                 className="flex items-center text-gray-700 hover:text-gray-900"
               >
                 <ArrowLeft className="h-5 w-5 mr-2" />
-                <span className="text-sm font-medium">Back to Admin</span>
+                <span className="text-sm font-medium">Back to Templates</span>
               </Link>
             </div>
           </div>

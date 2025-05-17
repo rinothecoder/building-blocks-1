@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Copy, Check, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface CopyButtonProps {
   code: string;
@@ -21,36 +22,36 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
       
       const templateData = await response.json();
       
-      // Transform the template data to match Elementor's format
+      // Ensure the template follows Elementor's format
       const elementorTemplate = {
         version: "0.4",
         title: title,
         type: "elementor",
         content: {
-          elements: templateData.content?.elements || [
-            {
-              ...templateData,
-              elements: templateData.elements || []
-            }
-          ]
+          elements: Array.isArray(templateData.content?.elements) 
+            ? templateData.content.elements 
+            : [templateData],
+          page_settings: templateData.content?.page_settings || {}
         }
       };
 
-      // Clean up any Skelementor-specific properties
+      // Remove any Skelementor-specific properties
       const cleanTemplate = JSON.stringify(elementorTemplate, (key, value) => {
-        // Remove Skelementor-specific properties
-        if (key === 'source' || key === 'siteurl') {
+        // Skip these properties
+        if (['source', 'siteurl'].includes(key)) {
           return undefined;
         }
         return value;
-      });
+      }, 2);
 
       await navigator.clipboard.writeText(cleanTemplate);
       
       setCopied(true);
+      toast.success('Template copied to clipboard');
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error('Error copying template:', error);
+      toast.error('Failed to copy template');
     } finally {
       setLoading(false);
     }

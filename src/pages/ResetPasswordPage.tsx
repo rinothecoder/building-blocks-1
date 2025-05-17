@@ -34,7 +34,7 @@ export default function ResetPasswordPage() {
       await logError(`Attempting password reset for email: ${email}`);
       
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/update-password`,
+        redirectTo: 'https://sage-quokka-a19861.netlify.app/update-password',
       });
 
       if (error) {

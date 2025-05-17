@@ -48,8 +48,8 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
 
       // Filter by selected tags
       if (selectedTags.length > 0) {
-        const tagFilter = selectedTags.map(tag => `template_tags.tags.name.eq.${tag}`);
-        query = query.or(tagFilter.join(','));
+        const tagFilter = selectedTags.map(tag => `tags.name.eq.${tag}`);
+        query = query.or(`(${tagFilter.join(',')})`);
       }
 
       const { data, error } = await query;

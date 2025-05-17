@@ -37,7 +37,6 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
           name,
           thumbnail_url,
           template_url,
-          created_at,
           template_tags (
             tags (
               name
@@ -48,7 +47,7 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
         .order('created_at', { ascending: false });
 
       if (selectedTags.length > 0) {
-        query = query.contains('template_tags.tags.name', selectedTags);
+        query = query.in('template_tags.tags.name', selectedTags);
       }
 
       const { data, error } = await query;
@@ -67,7 +66,12 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
         code: template.template_url
       }));
 
-      setTemplates(prev => page === 0 ? formattedTemplates : [...prev, ...formattedTemplates]);
+      if (page === 0) {
+        setTemplates(formattedTemplates);
+      } else {
+        setTemplates(prev => [...prev, ...formattedTemplates]);
+      }
+      
       setHasMore(data.length === ITEMS_PER_PAGE);
       setPage(prev => prev + 1);
     } catch (error) {

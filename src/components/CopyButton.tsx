@@ -3,9 +3,10 @@ import { Copy, Check, Loader2 } from 'lucide-react';
 
 interface CopyButtonProps {
   code: string;
+  title: string;
 }
 
-const CopyButton: React.FC<CopyButtonProps> = ({ code }) => {
+const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -18,8 +19,17 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code }) => {
         throw new Error('Failed to fetch template content');
       }
       
-      const jsonContent = await response.text();
-      await navigator.clipboard.writeText(jsonContent);
+      const templateContent = await response.json();
+      
+      // Wrap the content in Elementor's required structure
+      const elementorTemplate = {
+        version: "0.4",
+        title: title || "Template from Bolt",
+        type: "page",
+        content: templateContent
+      };
+
+      await navigator.clipboard.writeText(JSON.stringify(elementorTemplate));
       
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);

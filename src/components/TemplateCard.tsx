@@ -29,7 +29,7 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template }) => {
           
           <div className={`absolute bottom-0 left-0 right-0 p-4 transition-all duration-300 ${isHovered ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
             <div className="flex items-center space-x-2">
-              <CopyButton code={template.code} />
+              <CopyButton code={template.code} title={template.title} />
               <button 
                 onClick={() => setShowPreview(true)}
                 className="flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium bg-white/20 text-white backdrop-blur-sm hover:bg-white/30 transition-all duration-200"

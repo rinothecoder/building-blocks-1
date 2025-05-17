@@ -33,8 +33,12 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
       let query = supabase
         .from('templates')
         .select(`
-          *,
-          template_tags!inner (
+          id,
+          name,
+          thumbnail_url,
+          template_url,
+          created_at,
+          template_tags (
             tags (
               name
             )
@@ -44,7 +48,7 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
         .order('created_at', { ascending: false });
 
       if (selectedTags.length > 0) {
-        query = query.in('template_tags.tags.name', selectedTags);
+        query = query.contains('template_tags.tags.name', selectedTags);
       }
 
       const { data, error } = await query;
@@ -59,11 +63,11 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
         title: template.name,
         imageUrl: template.thumbnail_url,
         templateUrl: template.template_url,
-        tags: template.template_tags.map((tt: any) => tt.tags.name),
-        code: template.template_url // This will be replaced with actual template code when needed
+        tags: template.template_tags?.map((tt: any) => tt.tags.name) || [],
+        code: template.template_url
       }));
 
-      setTemplates(prev => [...prev, ...formattedTemplates]);
+      setTemplates(prev => page === 0 ? formattedTemplates : [...prev, ...formattedTemplates]);
       setHasMore(data.length === ITEMS_PER_PAGE);
       setPage(prev => prev + 1);
     } catch (error) {

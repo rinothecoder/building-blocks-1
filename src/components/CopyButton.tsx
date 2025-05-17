@@ -13,48 +13,23 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
 
   const validateElementorTemplate = (template: any) => {
     // If it's already a valid Elementor template, return as is
-    if (
-      template.version === "0.4" && 
-      template.type === "elementor" && 
-      Array.isArray(template.elements)
-    ) {
-      return template;
-    }
-
-    // Extract elements from the template
-    const elements = template.content?.elements || template.elements || [];
-
-    // Ensure each element has required properties
-    const processElement = (element: any): any => {
-      if (!element) return null;
-
-      // Ensure required properties exist
-      const processed = {
-        id: element.id || Math.random().toString(36).substr(2, 9),
-        elType: element.elType || 'section',
-        settings: element.settings || {},
-        elements: Array.isArray(element.elements) 
-          ? element.elements.map(processElement).filter(Boolean)
-          : []
+    if (template.content) {
+      return {
+        title: template.title,
+        type: "elementor",
+        siteurl: window.location.origin + '/wp-json/',
+        elements: template.content,
+        thumbnail: template.thumbnail_url
       };
-
-      // Add widgetType for widget elements
-      if (processed.elType === 'widget') {
-        processed.widgetType = element.widgetType || 'text-editor';
-      }
-
-      return processed;
-    };
-
-    // Process all elements recursively
-    const processedElements = elements.map(processElement).filter(Boolean);
+    }
 
     // Return properly formatted Elementor template
     return {
-      version: "0.4",
-      title: title || "Imported Template",
+      title: title,
       type: "elementor",
-      elements: processedElements
+      siteurl: window.location.origin + '/wp-json/',
+      elements: template.elements || [],
+      thumbnail: template.thumbnail_url
     };
   };
 
@@ -73,7 +48,7 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
       const elementorTemplate = validateElementorTemplate(templateData);
 
       // Convert to string with proper formatting
-      const templateString = JSON.stringify(elementorTemplate, null, 2);
+      const templateString = JSON.stringify(elementorTemplate);
 
       await navigator.clipboard.writeText(templateString);
       

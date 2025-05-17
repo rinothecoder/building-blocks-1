@@ -62,8 +62,7 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
         title: template.name,
         imageUrl: template.thumbnail_url,
         templateUrl: template.template_url,
-        tags: template.template_tags?.map((tt: any) => tt.tags.name) || [],
-        code: template.template_url
+        tags: template.template_tags?.map((tt: any) => tt.tags.name) || []
       }));
 
       if (page === 0) {

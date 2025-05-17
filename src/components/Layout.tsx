@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import TemplateGrid from './TemplateGrid';
-import { getFilteredTemplates } from '../data/templates';
 import { Menu, X } from 'lucide-react';
 
 const Layout: React.FC = () => {
@@ -26,8 +25,6 @@ const Layout: React.FC = () => {
       setMobileMenuOpen(false);
     }
   };
-
-  const filteredTemplates = getFilteredTemplates(selectedTags);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -59,7 +56,7 @@ const Layout: React.FC = () => {
         {/* Main Content */}
         <main className="flex-1">
           <div className="max-w-7xl mx-auto">
-            <TemplateGrid templates={filteredTemplates} />
+            <TemplateGrid selectedTags={selectedTags} />
           </div>
         </main>
       </div>

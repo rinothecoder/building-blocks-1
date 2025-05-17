@@ -130,17 +130,33 @@ export default function TemplateEditPage() {
 
       if (updateError) throw updateError;
 
-      // Delete existing tag associations
-      const { error: deleteError } = await supabase
+      // Get existing template tags
+      const { data: existingTags, error: existingTagsError } = await supabase
         .from('template_tags')
-        .delete()
+        .select('tag_id')
         .eq('template_id', id);
 
-      if (deleteError) throw deleteError;
+      if (existingTagsError) throw existingTagsError;
 
-      // Create new tag associations
-      if (selectedTags.length > 0) {
-        const templateTags = selectedTags.map(tagId => ({
+      // Find tags to remove and tags to add
+      const existingTagIds = existingTags.map(tag => tag.tag_id);
+      const tagsToRemove = existingTagIds.filter(tagId => !selectedTags.includes(tagId));
+      const tagsToAdd = selectedTags.filter(tagId => !existingTagIds.includes(tagId));
+
+      // Remove unselected tags
+      if (tagsToRemove.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('template_tags')
+          .delete()
+          .eq('template_id', id)
+          .in('tag_id', tagsToRemove);
+
+        if (deleteError) throw deleteError;
+      }
+
+      // Add new tags
+      if (tagsToAdd.length > 0) {
+        const templateTags = tagsToAdd.map(tagId => ({
           template_id: id,
           tag_id: tagId
         }));
@@ -153,7 +169,7 @@ export default function TemplateEditPage() {
       }
 
       toast.success('Template updated successfully');
-      navigate('/'); // Changed from '/admin' to '/'
+      navigate('/');
     } catch (error) {
       console.error('Update error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to update template');
@@ -189,7 +205,7 @@ export default function TemplateEditPage() {
             <p className="text-red-700">{error}</p>
             <Link
               to="/"
-              className="mt-4 inline-flex items-center text-red-700 hover:text-red-800"
+              className="inline-flex items-center text-red-700 hover:text-red-800"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Templates

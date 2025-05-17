@@ -21,10 +21,9 @@ export interface TransformedTemplate {
   version: string;
   title: string;
   type: string;
-  content: {
-    elements: any[];
-    page_settings: Record<string, any>;
-  };
+  siteurl: string;
+  thumbnail: string;
+  elements: any[];
 }
 
 export interface FilterState {

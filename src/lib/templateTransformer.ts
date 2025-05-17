@@ -31,10 +31,9 @@ export function transformTemplate(template: ElementorTemplate): TransformedTempl
     version: template.version,
     title: template.title || "Untitled Template",
     type: "elementor",
-    content: {
-      elements: elements,
-      page_settings: {}
-    }
+    siteurl: window.location.origin + "/wp-json/",
+    thumbnail: "",
+    elements: elements
   };
 
   console.log('Transformed template:', transformed);
@@ -62,19 +61,8 @@ export async function sanitizeAndCopyTemplate(template: any): Promise<void> {
     // Parse back to object to ensure valid JSON
     const templateObj = JSON.parse(cleanString);
 
-    // Ensure required structure with content wrapper
-    const validTemplate = {
-      version: templateObj.version || "0.4",
-      title: templateObj.title || "Untitled Template",
-      type: "elementor",
-      content: {
-        elements: templateObj.content?.elements || templateObj.elements || [],
-        page_settings: templateObj.content?.page_settings || {}
-      }
-    };
-
     // Convert back to string for clipboard
-    const finalString = JSON.stringify(validTemplate);
+    const finalString = JSON.stringify(templateObj);
     console.log('Final length:', finalString.length);
 
     await navigator.clipboard.writeText(finalString);

@@ -23,8 +23,14 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
       
       // Format the template according to Elementor's structure
       const elementorTemplate = {
+        version: "0.4",
+        title: title,
         type: "elementor",
-        elements: data.elements || [data],
+        content: data.elements || [data],
+        page_settings: {
+          hide_title: "yes",
+          template: "elementor_canvas"
+        }
       };
 
       await navigator.clipboard.writeText(JSON.stringify(elementorTemplate));

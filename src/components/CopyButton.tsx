@@ -21,12 +21,10 @@ const CopyButton: React.FC<CopyButtonProps> = ({ code, title }) => {
       
       const data = await response.json();
       
-      // Ensure we're using the content array directly
+      // Format the template according to Elementor's structure
       const elementorTemplate = {
-        version: "0.4",
-        title: title || "Template from Bolt",
-        type: "page",
-        content: Array.isArray(data.content) ? data.content : data // Use the array directly if it exists, otherwise use the whole response
+        type: "elementor",
+        elements: data.elements || [data],
       };
 
       await navigator.clipboard.writeText(JSON.stringify(elementorTemplate));

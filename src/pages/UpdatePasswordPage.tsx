@@ -20,7 +20,14 @@ export default function UpdatePasswordPage() {
     if (!accessToken || type !== 'recovery') {
       toast.error('Invalid or expired reset link');
       navigate('/login');
+      return;
     }
+
+    // Set the access token in Supabase
+    supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: '',
+    });
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {

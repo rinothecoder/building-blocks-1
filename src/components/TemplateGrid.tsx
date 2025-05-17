@@ -37,7 +37,7 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
           name,
           thumbnail_url,
           template_url,
-          template_tags (
+          template_tags!left (
             tags (
               name
             )
@@ -46,6 +46,7 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
         .range(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE - 1)
         .order('created_at', { ascending: false });
 
+      // Only filter by tags if tags are selected
       if (selectedTags.length > 0) {
         query = query.in('template_tags.tags.name', selectedTags);
       }

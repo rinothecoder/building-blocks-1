@@ -53,6 +53,14 @@ export default function AdminPage() {
     }
   };
 
+  const toggleTag = (tagId: string) => {
+    setSelectedTags(prev =>
+      prev.includes(tagId)
+        ? prev.filter(id => id !== tagId)
+        : [...prev, tagId]
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -219,12 +227,19 @@ export default function AdminPage() {
               ) : tags.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {tags.map(tag => (
-                    <div 
-                      key={tag.id} 
-                      className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium"
+                    <button
+                      key={tag.id}
+                      type="button"
+                      onClick={() => toggleTag(tag.id)}
+                      className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                        selectedTags.includes(tag.id)
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                      }`}
                     >
+                      <Tag className="h-4 w-4 mr-1.5" />
                       {tag.name}
-                    </div>
+                    </button>
                   ))}
                 </div>
               ) : (

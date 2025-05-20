@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Tag, Loader2, ArrowLeft } from 'lucide-react';
+import { Upload, Tag, Loader2, ArrowLeft, Settings, FileUp, Save, KeyRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
@@ -9,7 +9,10 @@ interface Tag {
   name: string;
 }
 
+type TabType = 'upload' | 'settings';
+
 export default function AdminPage() {
+  const [activeTab, setActiveTab] = useState<TabType>('upload');
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -20,9 +23,24 @@ export default function AdminPage() {
   const [loadingTags, setLoadingTags] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Profile settings state
+  const [email, setEmail] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
     loadTags();
+    loadUserProfile();
   }, []);
+
+  const loadUserProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.email) {
+      setEmail(user.email);
+    }
+  };
 
   const loadTags = async () => {
     try {
@@ -76,7 +94,7 @@ export default function AdminPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!name || !thumbnail) {
@@ -189,6 +207,71 @@ export default function AdminPage() {
     }
   };
 
+  const handleProfileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+
+    try {
+      // Validate passwords match if updating password
+      if (newPassword || confirmPassword) {
+        if (newPassword !== confirmPassword) {
+          toast.error('New passwords do not match');
+          return;
+        }
+        if (newPassword.length < 8) {
+          toast.error('Password must be at least 8 characters long');
+          return;
+        }
+        if (!currentPassword) {
+          toast.error('Current password is required to update password');
+          return;
+        }
+      }
+
+      // Verify current password if updating either email or password
+      if (currentPassword) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password: currentPassword,
+        });
+
+        if (signInError) {
+          toast.error('Current password is incorrect');
+          return;
+        }
+      }
+
+      // Update email if changed
+      if (email !== (await supabase.auth.getUser()).data.user?.email) {
+        const { error: emailError } = await supabase.auth.updateUser({
+          email: email
+        });
+
+        if (emailError) throw emailError;
+        toast.success('Email updated successfully');
+      }
+
+      // Update password if provided
+      if (newPassword) {
+        const { error: passwordError } = await supabase.auth.updateUser({
+          password: newPassword
+        });
+
+        if (passwordError) throw passwordError;
+        toast.success('Password updated successfully');
+        setNewPassword('');
+        setConfirmPassword('');
+      }
+
+      setCurrentPassword('');
+    } catch (error) {
+      console.error('Profile update error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to update profile');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Admin Header */}
@@ -216,139 +299,250 @@ export default function AdminPage() {
         </div>
       </div>
 
+      {/* Tab Navigation */}
+      <div className="max-w-2xl mx-auto pt-6 px-4">
+        <div className="flex space-x-1 rounded-lg bg-gray-100 p-1">
+          <button
+            onClick={() => setActiveTab('upload')}
+            className={`flex items-center justify-center flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'upload'
+                ? 'bg-white text-gray-900 shadow'
+                : 'text-gray-700 hover:text-gray-900'
+            }`}
+          >
+            <FileUp className="h-4 w-4 mr-2" />
+            File Upload
+          </button>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`flex items-center justify-center flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'settings'
+                ? 'bg-white text-gray-900 shadow'
+                : 'text-gray-700 hover:text-gray-900'
+            }`}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Profile Settings
+          </button>
+        </div>
+      </div>
+
       {/* Content */}
       <div className="py-8">
         <div className="max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
-          <h1 className="text-2xl font-semibold text-gray-800 mb-6">Upload Template</h1>
-          
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="templateName" className="block text-sm font-medium text-gray-700 mb-1">
-                Template Name *
-              </label>
-              <input
-                id="templateName"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Available Tags (Optional)
-              </label>
-              {error ? (
-                <div className="text-red-600 text-sm mb-2">
-                  Error loading tags: {error}
+          {activeTab === 'upload' ? (
+            <>
+              <h1 className="text-2xl font-semibold text-gray-800 mb-6">Upload Template</h1>
+              <form onSubmit={handleUploadSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="templateName" className="block text-sm font-medium text-gray-700 mb-1">
+                    Template Name *
+                  </label>
+                  <input
+                    id="templateName"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
                 </div>
-              ) : loadingTags ? (
-                <div className="flex items-center text-sm text-gray-500">
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Loading tags...
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Available Tags (Optional)
+                  </label>
+                  {error ? (
+                    <div className="text-red-600 text-sm mb-2">
+                      Error loading tags: {error}
+                    </div>
+                  ) : loadingTags ? (
+                    <div className="flex items-center text-sm text-gray-500">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Loading tags...
+                    </div>
+                  ) : tags.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {tags.map(tag => (
+                        <button
+                          key={tag.id}
+                          type="button"
+                          onClick={() => toggleTag(tag.id)}
+                          className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                            selectedTags.includes(tag.id)
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                          }`}
+                        >
+                          <Tag className="h-4 w-4 mr-1.5" />
+                          {tag.name}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No tags available</p>
+                  )}
                 </div>
-              ) : tags.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {tags.map(tag => (
-                    <button
-                      key={tag.id}
-                      type="button"
-                      onClick={() => toggleTag(tag.id)}
-                      className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                        selectedTags.includes(tag.id)
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-                      }`}
-                    >
-                      <Tag className="h-4 w-4 mr-1.5" />
-                      {tag.name}
-                    </button>
-                  ))}
+
+                <div>
+                  <label htmlFor="thumbnail" className="block text-sm font-medium text-gray-700 mb-1">
+                    Thumbnail Image *
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      id="thumbnail"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setThumbnail(e.target.files?.[0] || null)}
+                      className="w-full"
+                      required
+                    />
+                    {thumbnail && (
+                      <Tag className="h-5 w-5 text-green-500" />
+                    )}
+                  </div>
                 </div>
-              ) : (
-                <p className="text-sm text-gray-500">No tags available</p>
-              )}
-            </div>
 
-            <div>
-              <label htmlFor="thumbnail" className="block text-sm font-medium text-gray-700 mb-1">
-                Thumbnail Image *
-              </label>
-              <div className="flex items-center space-x-2">
-                <input
-                  id="thumbnail"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setThumbnail(e.target.files?.[0] || null)}
-                  className="w-full"
-                  required
-                />
-                {thumbnail && (
-                  <Tag className="h-5 w-5 text-green-500" />
-                )}
-              </div>
-            </div>
+                <div>
+                  <label htmlFor="jsonContent" className="block text-sm font-medium text-gray-700 mb-1">
+                    Paste Elementor JSON here
+                  </label>
+                  <textarea
+                    id="jsonContent"
+                    value={jsonContent}
+                    onChange={(e) => setJsonContent(e.target.value)}
+                    className="w-full h-32 rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Paste your Elementor JSON content here..."
+                  />
+                </div>
 
-            <div>
-              <label htmlFor="jsonContent" className="block text-sm font-medium text-gray-700 mb-1">
-                Paste Elementor JSON here
-              </label>
-              <textarea
-                id="jsonContent"
-                value={jsonContent}
-                onChange={(e) => setJsonContent(e.target.value)}
-                className="w-full h-32 rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Paste your Elementor JSON content here..."
-              />
-            </div>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">OR</span>
+                  </div>
+                </div>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">OR</span>
-              </div>
-            </div>
+                <div>
+                  <label htmlFor="template" className="block text-sm font-medium text-gray-700 mb-1">
+                    Upload Template File (.json)
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      id="template"
+                      type="file"
+                      accept=".json"
+                      onChange={(e) => setTemplate(e.target.files?.[0] || null)}
+                      className="w-full"
+                    />
+                    {template && (
+                      <Tag className="h-5 w-5 text-green-500" />
+                    )}
+                  </div>
+                </div>
 
-            <div>
-              <label htmlFor="template" className="block text-sm font-medium text-gray-700 mb-1">
-                Upload Template File (.json)
-              </label>
-              <div className="flex items-center space-x-2">
-                <input
-                  id="template"
-                  type="file"
-                  accept=".json"
-                  onChange={(e) => setTemplate(e.target.files?.[0] || null)}
-                  className="w-full"
-                />
-                {template && (
-                  <Tag className="h-5 w-5 text-green-500" />
-                )}
-              </div>
-            </div>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-blue-600 text-white rounded-lg px-4 py-2 font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? (
+                    <span className="flex items-center justify-center">
+                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                      Uploading...
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center">
+                      <Upload className="h-5 w-5 mr-2" />
+                      Upload Template
+                    </span>
+                  )}
+                </button>
+              </form>
+            </>
+          ) : (
+            <>
+              <h1 className="text-2xl font-semibold text-gray-800 mb-6">Profile Settings</h1>
+              <form onSubmit={handleProfileSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-blue-600 text-white rounded-lg px-4 py-2 font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <span className="flex items-center justify-center">
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                  Uploading...
-                </span>
-              ) : (
-                <span className="flex items-center justify-center">
-                  <Upload className="h-5 w-5 mr-2" />
-                  Upload Template
-                </span>
-              )}
-            </button>
-          </form>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                      Current Password
+                    </label>
+                    <input
+                      id="currentPassword"
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                      New Password
+                    </label>
+                    <input
+                      id="newPassword"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Leave blank to keep current password"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                      Confirm New Password
+                    </label>
+                    <input
+                      id="confirmPassword"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Leave blank to keep current password"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="w-full bg-blue-600 text-white rounded-lg px-4 py-2 font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSaving ? (
+                    <span className="flex items-center justify-center">
+                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                      Saving Changes...
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center">
+                      <Save className="h-5 w-5 mr-2" />
+                      Save Changes
+                    </span>
+                  )}
+                </button>
+              </form>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Tag, Loader2 } from 'lucide-react';
+import { Tag, Loader2, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface SidebarProps {
@@ -76,7 +76,18 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedTags, onTagSelect }) => {
   return (
     <aside className="w-full md:w-64 lg:w-72 bg-white md:border-r border-gray-200 md:h-[calc(100vh-64px)] overflow-y-auto md:sticky md:top-16 flex-shrink-0">
       <div className="p-4">
-        <h2 className="text-lg font-semibold text-gray-800 mb-6">Filter Templates</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold text-gray-800">Filter Templates</h2>
+          {selectedTags.length > 0 && (
+            <button
+              onClick={() => onTagSelect('')}
+              className="flex items-center px-2 py-1 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Clear filters
+            </button>
+          )}
+        </div>
         
         <div className="space-y-1">
           <div 

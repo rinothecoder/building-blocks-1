@@ -50,26 +50,18 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
         .order('created_at', { ascending: false });
 
       if (selectedTags.length > 0) {
-        // Create a subquery for each selected tag
-        const tagConditions = selectedTags.map((tag, index) => {
-          const alias = `tt${index}`;
-          return `
-            exists (
-              select 1 from template_tags ${alias}
-              join tags t${index} on t${index}.id = ${alias}.tag_id
-              where ${alias}.template_id = templates.id
-              and t${index}.name = '${tag}'
+        query = query.in(
+          'id',
+          supabase
+            .from('template_tags')
+            .select('template_id')
+            .in('tag_id', 
+              supabase
+                .from('tags')
+                .select('id')
+                .in('name', selectedTags)
             )
-          `;
-        });
-
-        // Combine all conditions with AND
-        query = query.filter('id', 'in', (subquery) => {
-          return subquery
-            .select('id')
-            .from('templates')
-            .filter(tagConditions.join(' and '));
-        });
+        );
       }
 
       const { data, error } = await query;

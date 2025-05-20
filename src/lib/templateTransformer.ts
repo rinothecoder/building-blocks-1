@@ -11,27 +11,14 @@ function validateTemplate(template: any): ElementorTemplate {
     throw new Error('Template must be an object');
   }
 
-  // Check for required fields
-  if (!template.version || !template.type) {
-    console.error('Invalid template structure:', template);
-    throw new Error('Template missing required fields (version, type)');
-  }
-
-  return template as ElementorTemplate;
-}
-
-export function transformTemplate(template: ElementorTemplate): TransformedTemplate {
-  console.log('Starting template transformation');
-
-  // Extract elements from content or direct elements property
-  const elements = template.content?.elements || template.elements || [];
+  // Extract elements from either content or root level
+  const elements = template.content?.elements || template.elements;
   
-  // Validate elements structure
-  if (!Array.isArray(elements)) {
-    throw new Error('Template elements must be an array');
+  if (!elements || !Array.isArray(elements)) {
+    throw new Error('Template must contain elements array either at root level or in content');
   }
 
-  // Validate each element has required Elementor fields
+  // Validate elements structure
   elements.forEach((element, index) => {
     if (!element.elType) {
       throw new Error(`Element at index ${index} missing required field 'elType'`);
@@ -40,6 +27,26 @@ export function transformTemplate(template: ElementorTemplate): TransformedTempl
       throw new Error(`Element at index ${index} missing or invalid 'settings' object`);
     }
   });
+
+  return {
+    version: template.version || "0.4",
+    type: template.type || "elementor",
+    title: template.title,
+    content: {
+      elements: elements
+    }
+  };
+}
+
+export function transformTemplate(template: ElementorTemplate): TransformedTemplate {
+  console.log('Starting template transformation');
+
+  // Extract elements, ensuring we get the proper structure
+  const elements = template.content?.elements || template.elements;
+  
+  if (!elements || !Array.isArray(elements)) {
+    throw new Error('Template must contain valid elements array');
+  }
 
   // Create the transformed template with the exact structure Elementor expects
   const transformed: TransformedTemplate = {
@@ -56,8 +63,15 @@ export function transformTemplate(template: ElementorTemplate): TransformedTempl
 
 export async function sanitizeAndCopyTemplate(template: any): Promise<void> {
   try {
-    // Check if template is already an object
+    // First ensure we have a proper object
     const templateObj = typeof template === 'object' ? template : JSON.parse(template);
+
+    // Extract elements, ensuring we get the proper structure
+    const elements = templateObj.content?.elements || templateObj.elements;
+    
+    if (!elements || !Array.isArray(elements)) {
+      throw new Error('Template must contain valid elements array');
+    }
 
     // Create the final template with the exact structure Elementor expects
     const finalTemplate = {
@@ -65,27 +79,13 @@ export async function sanitizeAndCopyTemplate(template: any): Promise<void> {
       type: "elementor",
       title: templateObj.title || "Untitled Template",
       siteurl: window.location.origin + "/wp-json/",
-      elements: templateObj.elements || []
+      elements: elements
     };
-
-    // Validate elements structure
-    if (!Array.isArray(finalTemplate.elements)) {
-      throw new Error('Template elements must be an array');
-    }
-
-    // Validate each element has required Elementor fields
-    finalTemplate.elements.forEach((element, index) => {
-      if (!element.elType) {
-        throw new Error(`Element at index ${index} missing required field 'elType'`);
-      }
-      if (!element.settings || typeof element.settings !== 'object') {
-        throw new Error(`Element at index ${index} missing or invalid 'settings' object`);
-      }
-    });
 
     // Convert to string for clipboard
     const finalString = JSON.stringify(finalTemplate);
     console.log('Final template structure:', finalTemplate);
+    console.log('Elements count:', elements.length);
     console.log('Final length:', finalString.length);
 
     await navigator.clipboard.writeText(finalString);
@@ -109,44 +109,44 @@ export async function copyTemplateToClipboard(templateUrl: string, title: string
       throw new Error(`Failed to fetch template: ${response.statusText}`);
     }
 
-    // Get response text
-    const text = await response.text();
+    // Get response text and clean it
+    let text = await response.text();
     console.log('Raw template text length:', text.length);
+    
+    // Clean the text by removing any content after the last valid JSON character
+    text = text.replace(/}\s*[^{}\[\]\s][\s\S]*$/, '}')
+               .replace(/]\s*[^{}\[\]\s][\s\S]*$/, ']')
+               .trim();
     
     let templateData;
     try {
-      // First try to parse the raw text
       templateData = JSON.parse(text);
       console.log('Successfully parsed template data');
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
       console.error('Failed text content:', text);
-      
-      // Try to clean the text and parse again
-      const cleanedText = text
-        .replace(/}\s*[^{}\[\]\s][\s\S]*$/, '}')
-        .replace(/]\s*[^{}\[\]\s][\s\S]*$/, ']')
-        .trim();
-      
-      try {
-        templateData = JSON.parse(cleanedText);
-        console.log('Successfully parsed cleaned template data');
-      } catch (secondParseError) {
-        console.error('Failed to parse even after cleaning:', secondParseError);
-        throw new Error('Template is not valid JSON');
-      }
+      throw new Error('Template is not valid JSON');
     }
 
-    // Validate template structure
-    const validatedTemplate = validateTemplate(templateData);
+    // Extract elements from either content or root level
+    const elements = templateData.content?.elements || templateData.elements;
+    
+    if (!elements || !Array.isArray(elements)) {
+      throw new Error('Template must contain elements array either at root level or in content');
+    }
 
-    // Transform and sanitize the template
-    const transformed = transformTemplate({
-      ...validatedTemplate,
-      title: title || validatedTemplate.title
-    });
+    // Create properly structured template
+    const validTemplate = {
+      version: templateData.version || "0.4",
+      type: "elementor",
+      title: title || templateData.title || "Untitled Template",
+      content: {
+        elements: elements
+      }
+    };
 
-    // Copy to clipboard
+    // Transform and copy
+    const transformed = transformTemplate(validTemplate);
     await sanitizeAndCopyTemplate(transformed);
     console.log('Template copied to clipboard successfully');
   } catch (error) {

@@ -49,12 +49,14 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
         .range(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE - 1)
         .order('created_at', { ascending: false });
 
-      // Only apply tag filtering if selectedTags is a valid non-empty array
-      if (Array.isArray(selectedTags) && selectedTags.length > 0) {
+      // Ensure selectedTags is always an array
+      const tagArray = Array.isArray(selectedTags) ? selectedTags : [];
+
+      if (tagArray.length > 0) {
         const tagQuery = supabase
           .from('tags')
           .select('id')
-          .in('name', selectedTags);
+          .in('name', tagArray);
 
         const templateTagQuery = supabase
           .from('template_tags')

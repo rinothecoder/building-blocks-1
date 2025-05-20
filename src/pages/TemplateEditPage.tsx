@@ -134,101 +134,116 @@ export default function TemplateEditPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsSaving(true);
 
-    try {
-      let thumbnailUrl = currentThumbnailUrl;
-      let templateUrl = currentTemplateUrl;
+  try {
+    let thumbnailUrl = currentThumbnailUrl;
+    let templateUrl = currentTemplateUrl;
 
-      // Upload new thumbnail if provided
-      if (thumbnail) {
-        const thumbnailPath = `thumbnails/${Date.now()}-${thumbnail.name}`;
-        const { error: thumbnailError } = await supabase.storage
-          .from('thumbnails')
-          .upload(thumbnailPath, thumbnail);
-        
-        if (thumbnailError) throw thumbnailError;
-        
-        thumbnailUrl = supabase.storage
-          .from('thumbnails')
-          .getPublicUrl(thumbnailPath).data.publicUrl;
-      }
+    // Upload new thumbnail if provided
+    if (thumbnail) {
+      const thumbnailPath = `thumbnails/${Date.now()}-${thumbnail.name}`;
+      const { error: thumbnailError } = await supabase.storage
+        .from('thumbnails')
+        .upload(thumbnailPath, thumbnail);
 
-      // Upload new template if provided
-      if (template) {
-        const templatePath = `templates/${Date.now()}-${template.name}`;
-        const { error: templateError } = await supabase.storage
-          .from('templates')
-          .upload(templatePath, template);
-        
-        if (templateError) throw templateError;
-        
-        templateUrl = supabase.storage
-          .from('templates')
-          .getPublicUrl(templatePath).data.publicUrl;
-      }
+      if (thumbnailError) throw thumbnailError;
 
-      // Update template record
-      const { error: updateError } = await supabase
-        .from('templates')
-        .update({
-          name,
-          thumbnail_url: thumbnailUrl,
-          template_url: templateUrl
-        })
-        .eq('id', id);
-
-      if (updateError) throw updateError;
-
-      // Get existing template tags
-      const { data: existingTags, error: existingTagsError } = await supabase
-        .from('template_tags')
-        .select('tag_id')
-        .eq('template_id', id);
-
-      if (existingTagsError) throw existingTagsError;
-
-      // Find tags to remove and tags to add
-      const existingTagIds = existingTags.map(tag => tag.tag_id);
-      const tagsToRemove = existingTagIds.filter(tagId => !selectedTags.includes(tagId));
-      const tagsToAdd = selectedTags.filter(tagId => !existingTagIds.includes(tagId));
-
-      // Remove unselected tags
-      if (tagsToRemove.length > 0) {
-        const { error: deleteError } = await supabase
-          .from('template_tags')
-          .delete()
-          .eq('template_id', id)
-          .in('tag_id', tagsToRemove);
-
-        if (deleteError) throw deleteError;
-      }
-
-      // Add new tags
-      if (tagsToAdd.length > 0) {
-        const templateTags = tagsToAdd.map(tagId => ({
-          template_id: id,
-          tag_id: tagId
-        }));
-
-        const { error: tagLinkError } = await supabase
-          .from('template_tags')
-          .insert(templateTags);
-
-        if (tagLinkError) throw tagLinkError;
-      }
-
-      toast.success('Template updated successfully');
-      navigate('/');
-    } catch (error) {
-      console.error('Update error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to update template');
-    } finally {
-      setIsSaving(false);
+      thumbnailUrl = supabase.storage
+        .from('thumbnails')
+        .getPublicUrl(thumbnailPath).data.publicUrl;
     }
-  };
+
+    // Upload and convert new template if provided
+    if (template) {
+      const fileText = await template.text();
+      const rawJson = JSON.parse(fileText);
+
+      const elements = rawJson.elements || rawJson.content;
+
+      if (!Array.isArray(elements)) throw new Error("Invalid template structure: missing elements array.");
+
+      const convertedTemplate = {
+        version: '0.4',
+        type: 'elementor',
+        title: name,
+        siteurl: window.location.origin + '/wp-json/',
+        elements: elements,
+      };
+
+      const blob = new Blob([JSON.stringify(convertedTemplate)], { type: 'application/json' });
+      const convertedFile = new File([blob], `converted-${Date.now()}-${template.name}`, { type: 'application/json' });
+
+      const templatePath = `templates/${convertedFile.name}`;
+      const { error: templateError } = await supabase.storage
+        .from('templates')
+        .upload(templatePath, convertedFile);
+
+      if (templateError) throw templateError;
+
+      templateUrl = supabase.storage
+        .from('templates')
+        .getPublicUrl(templatePath).data.publicUrl;
+    }
+
+    // Update template record
+    const { error: updateError } = await supabase
+      .from('templates')
+      .update({
+        name,
+        thumbnail_url: thumbnailUrl,
+        template_url: templateUrl
+      })
+      .eq('id', id);
+
+    if (updateError) throw updateError;
+
+    // Tag syncing (unchanged)
+    const { data: existingTags, error: existingTagsError } = await supabase
+      .from('template_tags')
+      .select('tag_id')
+      .eq('template_id', id);
+
+    if (existingTagsError) throw existingTagsError;
+
+    const existingTagIds = existingTags.map(tag => tag.tag_id);
+    const tagsToRemove = existingTagIds.filter(tagId => !selectedTags.includes(tagId));
+    const tagsToAdd = selectedTags.filter(tagId => !existingTagIds.includes(tagId));
+
+    if (tagsToRemove.length > 0) {
+      const { error: deleteError } = await supabase
+        .from('template_tags')
+        .delete()
+        .eq('template_id', id)
+        .in('tag_id', tagsToRemove);
+
+      if (deleteError) throw deleteError;
+    }
+
+    if (tagsToAdd.length > 0) {
+      const templateTags = tagsToAdd.map(tagId => ({
+        template_id: id,
+        tag_id: tagId
+      }));
+
+      const { error: tagLinkError } = await supabase
+        .from('template_tags')
+        .insert(templateTags);
+
+      if (tagLinkError) throw tagLinkError;
+    }
+
+    toast.success('Template updated successfully');
+    navigate('/');
+  } catch (error) {
+    console.error('Update error:', error);
+    toast.error(error instanceof Error ? error.message : 'Failed to update template');
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   const toggleTag = (tagId: string) => {
     setSelectedTags(prev =>

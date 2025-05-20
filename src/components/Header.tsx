@@ -86,7 +86,7 @@ const Header: React.FC = () => {
                   className="flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   <Shield className="h-4 w-4 mr-1" />
-                  <span className="text-sm font-medium">Admin</span>
+                  <span className="text-sm font-medium">Account</span>
                 </Link>
                 <button
                   onClick={handleSignOut}

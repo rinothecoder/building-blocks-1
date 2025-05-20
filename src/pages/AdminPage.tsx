@@ -408,7 +408,7 @@ export default function AdminPage() {
             }`}
           >
             <FileUp className="h-4 w-4 mr-2" />
-            File Upload
+            Upload a Template
           </button>
           <button
             onClick={() => setActiveTab('settings')}

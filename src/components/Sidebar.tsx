@@ -78,13 +78,13 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedTags, onTagSelect }) => {
       <div className="p-4">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-800">Filter Templates</h2>
-          {selectedTags.length > 0 && (
+          {selectedTags.length > 1 && (
             <button
               onClick={() => onTagSelect('')}
               className="flex items-center px-2 py-1 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
             >
               <X className="h-4 w-4 mr-1" />
-              Clear filters
+              Clear
             </button>
           )}
         </div>

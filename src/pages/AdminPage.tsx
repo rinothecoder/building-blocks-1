@@ -448,7 +448,7 @@ export default function AdminPage() {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 gap-6">
+                  <div className="grid grid-cols-2 gap-4">
                     {templates.map((template) => (
                       <div key={template.id} className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
                         <div className="aspect-video relative">
@@ -458,13 +458,13 @@ export default function AdminPage() {
                             className="w-full h-full object-cover"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                          <div className="absolute bottom-0 left-0 right-0 p-4">
-                            <h3 className="text-lg font-medium text-white mb-2">{template.name}</h3>
-                            <div className="flex flex-wrap gap-2">
+                          <div className="absolute bottom-0 left-0 right-0 p-3">
+                            <h3 className="text-sm font-medium text-white mb-1 line-clamp-1">{template.name}</h3>
+                            <div className="flex flex-wrap gap-1">
                               {template.tags.map((tag, index) => (
                                 <span
                                   key={index}
-                                  className="px-2 py-1 text-xs font-medium bg-white/20 text-white rounded-full"
+                                  className="px-1.5 py-0.5 text-xs font-medium bg-white/20 text-white rounded-full"
                                 >
                                   {tag.name}
                                 </span>
@@ -472,12 +472,12 @@ export default function AdminPage() {
                             </div>
                           </div>
                         </div>
-                        <div className="p-4 border-t border-gray-100">
+                        <div className="p-2 border-t border-gray-100">
                           <div className="flex items-center justify-between">
-                            <div className="text-sm text-gray-500">
+                            <div className="text-xs text-gray-500">
                               {new Date(template.created_at).toLocaleDateString()}
                             </div>
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-1">
                               <button
                                 onClick={() => window.open(template.thumbnail_url, '_blank')}
                                 className="p-1 text-gray-500 hover:text-gray-700"
@@ -503,8 +503,8 @@ export default function AdminPage() {
                     ))}
                   </div>
                   {totalPages > 1 && (
-                    <div className="mt-8 flex justify-center">
-                      <nav className="flex items-center space-x-2">
+                    <div className="mt-6 flex justify-center">
+                      <nav className="flex items-center space-x-1">
                         {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                           <button
                             key={page}

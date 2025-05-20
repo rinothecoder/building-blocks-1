@@ -53,25 +53,44 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
       const tagArray = Array.isArray(selectedTags) ? selectedTags : [];
 
       if (tagArray.length > 0) {
-        const tagQuery = supabase
+        // First get the tag IDs for the selected tag names
+        const { data: tagIds } = await supabase
           .from('tags')
           .select('id')
           .in('name', tagArray);
 
-        const templateTagQuery = supabase
-          .from('template_tags')
-          .select('template_id')
-          .in('tag_id', tagQuery);
+        if (tagIds && tagIds.length > 0) {
+          // Get the template IDs that have these tags
+          const { data: templateTags } = await supabase
+            .from('template_tags')
+            .select('template_id')
+            .in('tag_id', tagIds.map(tag => tag.id));
 
-        query = query.in('id', templateTagQuery);
+          if (templateTags && templateTags.length > 0) {
+            // Filter templates by the template IDs we found
+            query = query.in('id', templateTags.map(tt => tt.template_id));
+          } else {
+            // If no templates found with these tags, return empty array
+            setTemplates([]);
+            setHasMore(false);
+            setLoading(false);
+            return;
+          }
+        } else {
+          // If no matching tags found, return empty array
+          setTemplates([]);
+          setHasMore(false);
+          setLoading(false);
+          return;
+        }
       }
 
-      const { data, error } = await query;
-      console.log('Query response:', { data, error });
+      const { data, error: queryError } = await query;
+      console.log('Query response:', { data, error: queryError });
 
-      if (error) {
-        console.error('Error fetching templates:', error);
-        setError(`Failed to fetch templates: ${error.message}`);
+      if (queryError) {
+        console.error('Error fetching templates:', queryError);
+        setError(`Failed to fetch templates: ${queryError.message}`);
         return;
       }
 

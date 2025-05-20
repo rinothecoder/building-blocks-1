@@ -43,24 +43,8 @@ export function transformTemplate(template: ElementorTemplate): TransformedTempl
 
 export async function sanitizeAndCopyTemplate(template: any): Promise<void> {
   try {
-    // First convert to string if it's an object
-    const templateString = typeof template === 'string' 
-      ? template 
-      : JSON.stringify(template, null, 2);
-
-    console.log('Original length:', templateString.length);
-
-    // Clean the string of any potential hidden characters
-    const cleanString = templateString
-      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
-      .replace(/\u00A0/g, ' ')
-      .replace(/\uFEFF/g, '')
-      .trim();
-
-    console.log('Cleaned length:', cleanString.length);
-
-    // Parse back to object to ensure valid JSON
-    const templateObj = JSON.parse(cleanString);
+    // Check if template is already an object
+    const templateObj = typeof template === 'object' ? template : JSON.parse(template);
 
     // Create the final template with the exact structure Elementor expects
     const finalTemplate = {
@@ -71,7 +55,7 @@ export async function sanitizeAndCopyTemplate(template: any): Promise<void> {
       elements: templateObj.elements || []
     };
 
-    // Convert back to string for clipboard
+    // Convert to string for clipboard
     const finalString = JSON.stringify(finalTemplate);
     console.log('Final template structure:', finalTemplate);
     console.log('Final length:', finalString.length);
@@ -79,8 +63,8 @@ export async function sanitizeAndCopyTemplate(template: any): Promise<void> {
     await navigator.clipboard.writeText(finalString);
   } catch (error) {
     console.error('Template processing error:', error);
-    console.error('Template string:', template);
-    throw new Error('Failed to process template');
+    console.error('Template data:', template);
+    throw new Error('Failed to process template: Invalid template format');
   }
 }
 
@@ -97,25 +81,32 @@ export async function copyTemplateToClipboard(templateUrl: string, title: string
       throw new Error(`Failed to fetch template: ${response.statusText}`);
     }
 
-    // Get response text and try to parse
-    let text = await response.text();
+    // Get response text
+    const text = await response.text();
     console.log('Raw template text length:', text.length);
     
-    // Clean the text by removing any content after the last valid JSON character
-    text = text.replace(/}\s*[^{}\[\]\s][\s\S]*$/, '}')
-               .replace(/]\s*[^{}\[\]\s][\s\S]*$/, ']')
-               .trim();
-    
-    console.log('Cleaned template text length:', text.length);
-
     let templateData;
     try {
+      // First try to parse the raw text
       templateData = JSON.parse(text);
-      console.log('Parsed template data:', templateData);
+      console.log('Successfully parsed template data');
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
       console.error('Failed text content:', text);
-      throw new Error('Invalid JSON format in template file');
+      
+      // Try to clean the text and parse again
+      const cleanedText = text
+        .replace(/}\s*[^{}\[\]\s][\s\S]*$/, '}')
+        .replace(/]\s*[^{}\[\]\s][\s\S]*$/, ']')
+        .trim();
+      
+      try {
+        templateData = JSON.parse(cleanedText);
+        console.log('Successfully parsed cleaned template data');
+      } catch (secondParseError) {
+        console.error('Failed to parse even after cleaning:', secondParseError);
+        throw new Error('Template is not valid JSON');
+      }
     }
 
     // Validate template structure
@@ -127,7 +118,7 @@ export async function copyTemplateToClipboard(templateUrl: string, title: string
       title: title || validatedTemplate.title
     });
 
-    // Use the new sanitization function
+    // Copy to clipboard
     await sanitizeAndCopyTemplate(transformed);
     console.log('Template copied to clipboard successfully');
   } catch (error) {

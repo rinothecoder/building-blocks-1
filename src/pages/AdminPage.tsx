@@ -84,11 +84,6 @@ export default function AdminPage() {
       return;
     }
 
-    if (!template && !jsonContent) {
-      toast.error('Please either upload a template file or paste JSON content');
-      return;
-    }
-
     if (jsonContent && !validateJsonContent(jsonContent)) {
       return;
     }

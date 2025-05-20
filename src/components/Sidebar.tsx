@@ -81,7 +81,7 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedTags, onTagSelect }) => {
           {selectedTags.length > 1 && (
             <button
               onClick={() => onTagSelect('')}
-              className="flex items-center px-2 py-1 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center px-2 py-1 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
             >
               <X className="h-4 w-4 mr-1" />
               Clear

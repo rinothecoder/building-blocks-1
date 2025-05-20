@@ -49,19 +49,19 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
         .range(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE - 1)
         .order('created_at', { ascending: false });
 
-      if (selectedTags.length > 0) {
-        query = query.in(
-          'id',
-          supabase
-            .from('template_tags')
-            .select('template_id')
-            .in('tag_id', 
-              supabase
-                .from('tags')
-                .select('id')
-                .in('name', selectedTags)
-            )
-        );
+      // Only apply tag filtering if selectedTags is a valid non-empty array
+      if (Array.isArray(selectedTags) && selectedTags.length > 0) {
+        const tagQuery = supabase
+          .from('tags')
+          .select('id')
+          .in('name', selectedTags);
+
+        const templateTagQuery = supabase
+          .from('template_tags')
+          .select('template_id')
+          .in('tag_id', tagQuery);
+
+        query = query.in('id', templateTagQuery);
       }
 
       const { data, error } = await query;
@@ -74,7 +74,7 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
       }
 
       // Ensure data is an array and not null/undefined
-      const templatesArray = Array.isArray(data) ? data : data ? [data] : [];
+      const templatesArray = Array.isArray(data) ? data : [];
 
       const formattedTemplates = templatesArray.map(template => ({
         id: template.id,

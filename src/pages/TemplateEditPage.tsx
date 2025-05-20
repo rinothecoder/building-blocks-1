@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, Tag } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Tag, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 
@@ -22,6 +22,7 @@ export default function TemplateEditPage() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [name, setName] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
@@ -79,6 +80,57 @@ export default function TemplateEditPage() {
       toast.error('Failed to load template');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this template? This action cannot be undone.')) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      // Delete template tags first (foreign key constraint will handle this automatically)
+      const { error: deleteTagsError } = await supabase
+        .from('template_tags')
+        .delete()
+        .eq('template_id', id);
+
+      if (deleteTagsError) throw deleteTagsError;
+
+      // Delete the template record
+      const { error: deleteTemplateError } = await supabase
+        .from('templates')
+        .delete()
+        .eq('id', id);
+
+      if (deleteTemplateError) throw deleteTemplateError;
+
+      // Extract file paths from URLs
+      const thumbnailPath = currentThumbnailUrl.split('/').pop();
+      const templatePath = currentTemplateUrl.split('/').pop();
+
+      // Delete files from storage
+      if (thumbnailPath) {
+        await supabase.storage
+          .from('thumbnails')
+          .remove([thumbnailPath]);
+      }
+
+      if (templatePath) {
+        await supabase.storage
+          .from('templates')
+          .remove([templatePath]);
+      }
+
+      toast.success('Template deleted successfully');
+      navigate('/');
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to delete template');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -238,7 +290,21 @@ export default function TemplateEditPage() {
       {/* Content */}
       <div className="py-8">
         <div className="max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
-          <h1 className="text-2xl font-semibold text-gray-800 mb-6">Edit Template</h1>
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-semibold text-gray-800">Edit Template</h1>
+            <button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="flex items-center px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
+              Delete Template
+            </button>
+          </div>
           
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>

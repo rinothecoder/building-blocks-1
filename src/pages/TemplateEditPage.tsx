@@ -68,7 +68,7 @@ export default function TemplateEditPage() {
       // Set template data
       setName(templateData.name);
       setCurrentThumbnailUrl(templateData.thumbnail_url);
-      setCurrentTemplateUrl(templateData.template_url);
+      setCurrentTemplateUrl(templateData.template_url || '');
       
       // Set tags
       setAvailableTags(tagsData || []);
@@ -109,19 +109,27 @@ export default function TemplateEditPage() {
 
       // Extract file paths from URLs
       const thumbnailPath = currentThumbnailUrl.split('/').pop();
-      const templatePath = currentTemplateUrl.split('/').pop();
+      const templatePath = currentTemplateUrl ? currentTemplateUrl.split('/').pop() : null;
 
       // Delete files from storage
       if (thumbnailPath) {
-        await supabase.storage
+        const { error: thumbnailDeleteError } = await supabase.storage
           .from('thumbnails')
           .remove([thumbnailPath]);
+          
+        if (thumbnailDeleteError) {
+          console.error('Error deleting thumbnail:', thumbnailDeleteError);
+        }
       }
 
       if (templatePath) {
-        await supabase.storage
+        const { error: templateDeleteError } = await supabase.storage
           .from('templates')
           .remove([templatePath]);
+          
+        if (templateDeleteError) {
+          console.error('Error deleting template file:', templateDeleteError);
+        }
       }
 
       toast.success('Template deleted successfully');

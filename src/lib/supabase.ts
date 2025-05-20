@@ -22,14 +22,44 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
-// Test the connection
-supabase.from('tags').select('count').single()
-  .then(({ data, error }) => {
-    if (error) {
-      console.error('Supabase connection test failed:', error);
+// Test the connection and log debug information
+(async () => {
+  try {
+    console.log('Testing Supabase connection...');
+    
+    // Test templates table access
+    const { data: templates, error: templatesError } = await supabase
+      .from('templates')
+      .select('count')
+      .single();
+    
+    if (templatesError) {
+      console.error('Failed to access templates:', templatesError);
+      
+      // Log the error for debugging
+      await supabase
+        .from('debug_logs')
+        .insert([{
+          message: `Templates access error: ${templatesError.message}`,
+        }]);
     } else {
-      console.log('Supabase connection test successful');
+      console.log('Successfully connected to Supabase');
+      console.log('Templates count:', templates?.count);
     }
-  });
+  } catch (err) {
+    console.error('Supabase connection test failed:', err);
+    
+    // Attempt to log the error
+    try {
+      await supabase
+        .from('debug_logs')
+        .insert([{
+          message: `Connection test failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        }]);
+    } catch (logError) {
+      console.error('Failed to log error:', logError);
+    }
+  }
+})();
 
 export { supabase };

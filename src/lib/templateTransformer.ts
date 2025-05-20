@@ -25,7 +25,21 @@ export function transformTemplate(template: ElementorTemplate): TransformedTempl
 
   // Extract elements from content or direct elements property
   const elements = template.content?.elements || template.elements || [];
-  console.log('Extracted elements:', elements);
+  
+  // Validate elements structure
+  if (!Array.isArray(elements)) {
+    throw new Error('Template elements must be an array');
+  }
+
+  // Validate each element has required Elementor fields
+  elements.forEach((element, index) => {
+    if (!element.elType) {
+      throw new Error(`Element at index ${index} missing required field 'elType'`);
+    }
+    if (!element.settings || typeof element.settings !== 'object') {
+      throw new Error(`Element at index ${index} missing or invalid 'settings' object`);
+    }
+  });
 
   // Create the transformed template with the exact structure Elementor expects
   const transformed: TransformedTemplate = {
@@ -33,7 +47,6 @@ export function transformTemplate(template: ElementorTemplate): TransformedTempl
     title: template.title || "Untitled Template",
     type: "elementor",
     siteurl: window.location.origin + "/wp-json/",
-    thumbnail: "",
     elements: elements
   };
 
@@ -54,6 +67,21 @@ export async function sanitizeAndCopyTemplate(template: any): Promise<void> {
       siteurl: window.location.origin + "/wp-json/",
       elements: templateObj.elements || []
     };
+
+    // Validate elements structure
+    if (!Array.isArray(finalTemplate.elements)) {
+      throw new Error('Template elements must be an array');
+    }
+
+    // Validate each element has required Elementor fields
+    finalTemplate.elements.forEach((element, index) => {
+      if (!element.elType) {
+        throw new Error(`Element at index ${index} missing required field 'elType'`);
+      }
+      if (!element.settings || typeof element.settings !== 'object') {
+        throw new Error(`Element at index ${index} missing or invalid 'settings' object`);
+      }
+    });
 
     // Convert to string for clipboard
     const finalString = JSON.stringify(finalTemplate);

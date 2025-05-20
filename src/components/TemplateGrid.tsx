@@ -32,7 +32,7 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
     setLoading(true);
     try {
       console.log('Fetching templates...', { page, selectedTags });
-      
+
       let query = supabase
         .from('templates')
         .select(`
@@ -40,8 +40,8 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
           name,
           thumbnail_url,
           template_url,
-          template_tags (
-            tags (
+          template_tags!inner (
+            tags!inner (
               name
             )
           )
@@ -50,7 +50,26 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
         .order('created_at', { ascending: false });
 
       if (selectedTags.length > 0) {
-        query = query.in('template_tags.tags.name', selectedTags);
+        // Create a subquery for each selected tag
+        const tagConditions = selectedTags.map((tag, index) => {
+          const alias = `tt${index}`;
+          return `
+            exists (
+              select 1 from template_tags ${alias}
+              join tags t${index} on t${index}.id = ${alias}.tag_id
+              where ${alias}.template_id = templates.id
+              and t${index}.name = '${tag}'
+            )
+          `;
+        });
+
+        // Combine all conditions with AND
+        query = query.filter('id', 'in', (subquery) => {
+          return subquery
+            .select('id')
+            .from('templates')
+            .filter(tagConditions.join(' and '));
+        });
       }
 
       const { data, error } = await query;

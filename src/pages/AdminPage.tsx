@@ -419,7 +419,7 @@ export default function AdminPage() {
             }`}
           >
             <Settings className="h-4 w-4 mr-2" />
-            Profile Settings
+            Profile
           </button>
         </div>
       </div>

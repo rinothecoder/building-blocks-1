@@ -17,6 +17,7 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const loadingRef = useRef<HTMLDivElement>(null);
 
   const gridColsClass = {
@@ -30,6 +31,8 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
     
     setLoading(true);
     try {
+      console.log('Fetching templates...', { page, selectedTags });
+      
       let query = supabase
         .from('templates')
         .select(`
@@ -51,9 +54,11 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
       }
 
       const { data, error } = await query;
+      console.log('Query response:', { data, error });
 
       if (error) {
         console.error('Error fetching templates:', error);
+        setError(`Failed to fetch templates: ${error.message}`);
         return;
       }
 
@@ -63,10 +68,12 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
         imageUrl: template.thumbnail_url,
         templateUrl: template.template_url,
         tags: template.template_tags
-          ?.filter(tt => tt?.tags) // Filter out null/undefined tags
+          ?.filter(tt => tt?.tags)
           ?.map((tt: any) => tt.tags?.name)
-          ?.filter(Boolean) || [] // Filter out null/undefined names
+          ?.filter(Boolean) || []
       }));
+
+      console.log('Formatted templates:', formattedTemplates);
 
       if (page === 0) {
         setTemplates(formattedTemplates);
@@ -78,6 +85,7 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
       setPage(prev => prev + 1);
     } catch (error) {
       console.error('Error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to fetch templates');
     } finally {
       setLoading(false);
     }
@@ -88,6 +96,7 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
     setTemplates([]);
     setPage(0);
     setHasMore(true);
+    setError(null);
   }, [selectedTags]);
 
   useEffect(() => {
@@ -115,6 +124,12 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
 
   return (
     <div className="w-full p-4 md:p-6">
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <p className="text-red-700">{error}</p>
+        </div>
+      )}
+
       {templates.length === 0 && !loading ? (
         <div className="flex flex-col items-center justify-center py-16">
           <p className="text-gray-500 text-lg">No templates found matching your criteria.</p>

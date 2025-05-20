@@ -3,6 +3,7 @@ export interface Template {
   title: string;
   imageUrl: string;
   templateUrl: string;
+  jsonContent?: any;
   tags: string[];
 }
 
@@ -22,7 +23,6 @@ export interface TransformedTemplate {
   title: string;
   type: string;
   siteurl: string;
-  thumbnail: string;
   elements: any[];
 }
 

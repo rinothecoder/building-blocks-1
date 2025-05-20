@@ -96,11 +96,18 @@ export async function sanitizeAndCopyTemplate(template: any): Promise<void> {
   }
 }
 
-export async function copyTemplateToClipboard(templateUrl: string, title: string): Promise<void> {
-  console.log('Starting template copy process', { templateUrl, title });
+export async function copyTemplateToClipboard(templateUrl: string, title: string, jsonContent?: any): Promise<void> {
+  console.log('Starting template copy process', { templateUrl, title, jsonContent });
 
   try {
-    // Fetch template data
+    // If we have JSON content, use it directly
+    if (jsonContent) {
+      await sanitizeAndCopyTemplate(jsonContent);
+      console.log('Template copied from JSON content successfully');
+      return;
+    }
+
+    // Otherwise, fetch from URL
     console.log('Fetching template from:', templateUrl);
     const response = await fetch(templateUrl);
     

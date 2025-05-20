@@ -6,18 +6,19 @@ import { copyTemplateToClipboard } from '../lib/templateTransformer';
 interface CopyButtonProps {
   templateUrl: string;
   title: string;
+  jsonContent?: any;
 }
 
-const CopyButton: React.FC<CopyButtonProps> = ({ templateUrl, title }) => {
+const CopyButton: React.FC<CopyButtonProps> = ({ templateUrl, title, jsonContent }) => {
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleCopy = async () => {
-    console.log('Copy button clicked', { templateUrl, title });
+    console.log('Copy button clicked', { templateUrl, title, jsonContent });
     
     try {
       setLoading(true);
-      await copyTemplateToClipboard(templateUrl, title);
+      await copyTemplateToClipboard(templateUrl, title, jsonContent);
       setCopied(true);
       toast.success('Template copied successfully!');
       setTimeout(() => setCopied(false), 2000);

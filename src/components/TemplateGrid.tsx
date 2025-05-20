@@ -40,6 +40,7 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
           name,
           thumbnail_url,
           template_url,
+          json_content,
           template_tags!inner (
             tags!inner (
               name
@@ -102,6 +103,7 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
         title: template.name,
         imageUrl: template.thumbnail_url,
         templateUrl: template.template_url,
+        jsonContent: template.json_content,
         tags: template.template_tags
           ?.filter(tt => tt?.tags)
           ?.map((tt: any) => tt.tags?.name)
@@ -183,6 +185,7 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
                   }
                 }}
                 selectedTags={selectedTags}
+                jsonContent={template.jsonContent}
               />
             ))}
           </div>

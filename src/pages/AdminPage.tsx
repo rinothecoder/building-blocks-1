@@ -16,6 +16,7 @@ export default function AdminPage() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [template, setTemplate] = useState<File | null>(null);
+  const [jsonContent, setJsonContent] = useState('');
   const [loadingTags, setLoadingTags] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,23 +62,41 @@ export default function AdminPage() {
     );
   };
 
+  const validateJsonContent = (content: string): boolean => {
+    try {
+      const parsed = JSON.parse(content);
+      if (!parsed.elements || !Array.isArray(parsed.elements)) {
+        toast.error('JSON must contain an elements array');
+        return false;
+      }
+      return true;
+    } catch (error) {
+      toast.error('Invalid JSON format');
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name || !thumbnail || !template) {
+    if (!name || !thumbnail) {
       toast.error('Please fill in all required fields');
       return;
     }
 
-    if (!template.name.endsWith('.json')) {
-      toast.error('Template file must be a .json file');
+    if (!template && !jsonContent) {
+      toast.error('Please either upload a template file or paste JSON content');
+      return;
+    }
+
+    if (jsonContent && !validateJsonContent(jsonContent)) {
       return;
     }
 
     setIsLoading(true);
 
     try {
-      console.log('Starting file upload process...');
+      console.log('Starting upload process...');
       
       // Upload thumbnail
       const thumbnailPath = `thumbnails/${Date.now()}-${thumbnail.name}`;
@@ -92,26 +111,35 @@ export default function AdminPage() {
       }
       console.log('Thumbnail uploaded successfully:', thumbnailData);
 
-      // Upload template
-      const templatePath = `templates/${Date.now()}-${template.name}`;
-      console.log('Uploading template to:', templatePath);
-      const { error: templateError, data: templateData } = await supabase.storage
-        .from('templates')
-        .upload(templatePath, template);
-      
-      if (templateError) {
-        console.error('Template upload error:', templateError);
-        throw templateError;
+      let templateUrl = null;
+      let parsedJsonContent = null;
+
+      // Handle template file or JSON content
+      if (template) {
+        const templatePath = `templates/${Date.now()}-${template.name}`;
+        console.log('Uploading template to:', templatePath);
+        const { error: templateError, data: templateData } = await supabase.storage
+          .from('templates')
+          .upload(templatePath, template);
+        
+        if (templateError) {
+          console.error('Template upload error:', templateError);
+          throw templateError;
+        }
+        console.log('Template uploaded successfully:', templateData);
+        templateUrl = supabase.storage
+          .from('templates')
+          .getPublicUrl(templatePath).data.publicUrl;
       }
-      console.log('Template uploaded successfully:', templateData);
+
+      if (jsonContent) {
+        parsedJsonContent = JSON.parse(jsonContent);
+      }
 
       // Get public URLs
       const thumbnailUrl = supabase.storage
         .from('thumbnails')
         .getPublicUrl(thumbnailPath).data.publicUrl;
-      const templateUrl = supabase.storage
-        .from('templates')
-        .getPublicUrl(templatePath).data.publicUrl;
 
       console.log('Creating template record...');
       // Create template record
@@ -121,6 +149,7 @@ export default function AdminPage() {
           name,
           thumbnail_url: thumbnailUrl,
           template_url: templateUrl,
+          json_content: parsedJsonContent,
           created_by: (await supabase.auth.getUser()).data.user?.id
         })
         .select()
@@ -156,6 +185,7 @@ export default function AdminPage() {
       setSelectedTags([]);
       setThumbnail(null);
       setTemplate(null);
+      setJsonContent('');
     } catch (error) {
       console.error('Upload error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to upload template');
@@ -267,8 +297,30 @@ export default function AdminPage() {
             </div>
 
             <div>
+              <label htmlFor="jsonContent" className="block text-sm font-medium text-gray-700 mb-1">
+                Paste Elementor JSON here
+              </label>
+              <textarea
+                id="jsonContent"
+                value={jsonContent}
+                onChange={(e) => setJsonContent(e.target.value)}
+                className="w-full h-32 rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Paste your Elementor JSON content here..."
+              />
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">OR</span>
+              </div>
+            </div>
+
+            <div>
               <label htmlFor="template" className="block text-sm font-medium text-gray-700 mb-1">
-                Template File * (.json)
+                Upload Template File (.json)
               </label>
               <div className="flex items-center space-x-2">
                 <input
@@ -277,7 +329,6 @@ export default function AdminPage() {
                   accept=".json"
                   onChange={(e) => setTemplate(e.target.files?.[0] || null)}
                   className="w-full"
-                  required
                 />
                 {template && (
                   <Tag className="h-5 w-5 text-green-500" />

@@ -9,9 +9,10 @@ interface TemplateCardProps {
   template: Template;
   onTagClick?: (tag: string) => void;
   selectedTags?: string[];
+  jsonContent?: any;
 }
 
-const TemplateCard: React.FC<TemplateCardProps> = ({ template, onTagClick, selectedTags = [] }) => {
+const TemplateCard: React.FC<TemplateCardProps> = ({ template, onTagClick, selectedTags = [], jsonContent }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
@@ -32,7 +33,11 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template, onTagClick, selec
           
           <div className={`absolute bottom-0 left-0 right-0 p-4 transition-all duration-300 ${isHovered ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
             <div className="flex items-center space-x-2">
-              <CopyButton templateUrl={template.templateUrl} title={template.title} />
+              <CopyButton 
+                templateUrl={template.templateUrl} 
+                title={template.title}
+                jsonContent={jsonContent}
+              />
               <button 
                 onClick={() => setShowPreview(true)}
                 className="flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium bg-white/20 text-white backdrop-blur-sm hover:bg-white/30 transition-all duration-200"

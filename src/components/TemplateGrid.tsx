@@ -73,7 +73,10 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
         return;
       }
 
-      const formattedTemplates = data.map(template => ({
+      // Ensure data is an array and not null/undefined
+      const templatesArray = Array.isArray(data) ? data : data ? [data] : [];
+
+      const formattedTemplates = templatesArray.map(template => ({
         id: template.id,
         title: template.name,
         imageUrl: template.thumbnail_url,
@@ -92,7 +95,7 @@ const TemplateGrid: React.FC<TemplateGridProps> = ({ selectedTags }) => {
         setTemplates(prev => [...prev, ...formattedTemplates]);
       }
       
-      setHasMore(data.length === ITEMS_PER_PAGE);
+      setHasMore(templatesArray.length === ITEMS_PER_PAGE);
       setPage(prev => prev + 1);
     } catch (error) {
       console.error('Error:', error);
